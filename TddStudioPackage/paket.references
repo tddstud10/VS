@@ -1,0 +1,5 @@
+BuildTools.FxCop
+FSharp.Core
+Mono.Cecil
+MvvmLightLibs
+StyleCop.MSBuild
