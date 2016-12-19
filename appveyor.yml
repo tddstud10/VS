@@ -1,0 +1,18 @@
+image: Visual Studio 2015
+
+install:
+  - choco install gitversion.portable -pre -y
+
+assembly_info:
+  patch: false
+
+before_build:
+  - ps: gitversion /l console /output buildserver /updateAssemblyInfo
+
+build_script:
+  - cmd: .\build.cmd Publish
+
+test: off
+
+#on_finish:
+#- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))

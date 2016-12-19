@@ -1,0 +1,29 @@
+source https://www.nuget.org/api/v2
+
+nuget FAKE
+nuget NuGet.CommandLine
+nuget GitVersion.CommandLine prerelease
+nuget GitLink
+nuget FSharp.Core 3.1.2.5
+nuget MvvmLightLibs 5.3.0.0 framework: >= net45
+nuget Microsoft.Diagnostics.Tracing.EventSource
+nuget Microsoft.ApplicationInsights
+nuget Microsoft.Diagnostics.Tracing.TraceEvent 1.0.41 framework: >= net45
+nuget EditorUtils2010 1.5.0.1 framework: >= net45
+nuget Mono.Cecil 0.9.6.4 framework: >= net45
+nuget BuildTools.FxCop 1.0.1
+nuget StyleCop.MSBuild 4.7.54.0
+nuget xunit 2.1.0 framework: >= net45
+nuget xunit.runner.console
+nuget xunit.runner.visualstudio 2.1.0 framework: >= net45
+
+group TddStud10
+    source http://nuget.org/api/v2
+    nuget FSharp.Core 3.1.2.5 framework: >= net45
+    source https://ci.appveyor.com/nuget/common-wqs82t184w0x
+    nuget TddStud10.Common 
+    source https://ci.appveyor.com/nuget/testhost-rrsttutj8jym
+    nuget TddStud10.TestHost 
+    source https://ci.appveyor.com/nuget/engine-is6vufvqx0ah
+    nuget TddStud10.Engine 
+    
