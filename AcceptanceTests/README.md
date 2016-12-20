@@ -10,6 +10,7 @@
   - unignore, fix tests and make things green - green test, debug, goto test
   - cache in %temp%
   - disable tddstudio
+  - verify telemetry appears
 
 # Acceptance Tests
   - Help About - icon, version, name

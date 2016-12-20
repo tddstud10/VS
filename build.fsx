@@ -1,14 +1,17 @@
 // include Fake libs
 #r "./packages/FAKE/tools/FakeLib.dll"
+#r "System.Management.Automation"
 
 open Fake
 open Fake.Testing
 open System
 open System.IO
+open System.Management.Automation
 
 MSBuildDefaults <- { MSBuildDefaults with Verbosity = Some MSBuildVerbosity.Minimal }
 let version = EnvironmentHelper.environVarOrDefault "GitVersion_NuGetVersion" "0.0.0-alpha00"
 let vsixName = sprintf "TddStud10.%s.vsix" version
+let vsixVersion = EnvironmentHelper.environVarOrDefault "GitVersion_AssemblySemVer" "0.0.0.0"
 
 // Directories
 let packagesDir = __SOURCE_DIRECTORY__ @@ "packages"
@@ -45,6 +48,14 @@ Target "UpdateTelemetryKey" (fun _ ->
     if not <| File.Exists keyFile then failwithf "Key file not found at %s" keyFile
     let key = EnvironmentHelper.environVarOrDefault "TELEMETRY_INSTRUMENTATION_KEY" String.Empty
     File.WriteAllText(keyFile, key)
+)
+
+Target "UpdateVSIXVersion" (fun _ ->
+    PowerShell
+        .Create()
+        .AddScript(__SOURCE_DIRECTORY__ @@ "tools" @@ (sprintf "updateVSIXVersion.ps1 -Version %s" vsixVersion))
+        .Invoke()
+        |> Seq.iter (printfn "%O")
 )
 
 Target "Build" (fun _ ->
@@ -87,7 +98,7 @@ Target "Test" DoNothing
 Target "UnitTests" (runTest "/*.UnitTests*.dll")
 
 Target "Package" (fun _ ->
-    printf "TBD: Inject pdbs into the VSIX."
+    printf "TBD: Inject pdbs into the VSIX. and generate dogfood vsix"
 )
 
 Target "Publish" (fun _ ->
@@ -97,7 +108,8 @@ Target "Publish" (fun _ ->
 
 "Clean" ?=> "Build"
 "Clean" ==> "Rebuild" 
-"UpdateTelemetryKey" ==> "Build" 
+"UpdateTelemetryKey" ==> "Build"
+"UpdateVSIXVersion" ==> "Build"
 "Build" ==> "Rebuild" 
 "Build" ?=> "UnitTests" ==> "Test"
 "Rebuild" ==> "Test"
