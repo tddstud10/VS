@@ -10,7 +10,7 @@ open System.Management.Automation
 
 MSBuildDefaults <- { MSBuildDefaults with Verbosity = Some MSBuildVerbosity.Minimal }
 let version = EnvironmentHelper.environVarOrDefault "GitVersion_NuGetVersion" "0.0.0-alpha00"
-let vsixName = sprintf "TddStud10.%s.vsix" version
+let vsixName = sprintf "TddStud10.%s.org.vsix" version
 let vsixVersion = EnvironmentHelper.environVarOrDefault "GitVersion_AssemblySemVer" "0.0.0.0"
 
 // Directories
@@ -66,6 +66,14 @@ Target "Build" (fun _ ->
     // AppVeyor workaround
     !! @"packages\Newtonsoft.Json\lib\net45\Newtonsoft.Json.dll"
     |> CopyFiles buildDir
+    
+    let vsixWithPdb = buildDir @@ vsixName.Replace(".org", "")
+    CopyFile vsixWithPdb (buildDir @@ vsixName) 
+    let ret =
+        ExecProcess (fun info ->
+            info.FileName <- buildDir @@ "R4nd0mApps.TddStud10.VsixEditor.exe"
+            info.Arguments <- vsixWithPdb) (TimeSpan.FromSeconds 30.0)
+    if ret <> 0 then failwithf "VsixEdtor errored out"
 )
 
 Target "GitLink" (fun _ ->

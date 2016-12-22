@@ -423,6 +423,11 @@ NUGET
     xunit.runner.console (2.1)
     xunit.runner.visualstudio (2.1) - framework: >= net45
 
+GROUP Build
+NUGET
+  remote: https://www.nuget.org/api/v2
+    VsixUtil (1.1.2)
+
 GROUP TddStud10
 NUGET
   remote: http://www.nuget.org/api/v2
@@ -667,10 +672,10 @@ NUGET
       System.Threading (>= 4.3) - framework: dnxcore50, >= netstandard13
       System.Xml.ReaderWriter (>= 4.3) - framework: dnxcore50, netstandard10, >= netstandard13
   remote: https://ci.appveyor.com/nuget/common-wqs82t184w0x
-    TddStud10.Common (0.1.0-ci0071)
+    TddStud10.Common (0.1.0-ci0074)
       FSharp.Core (>= 3.1.2.5)
   remote: https://ci.appveyor.com/nuget/engine-is6vufvqx0ah
-    TddStud10.Engine (0.1.0-ci0109)
+    TddStud10.Engine (0.1.0-ci0111)
       FSharp.Core (>= 3.1.2.5)
       Mono.Cecil (>= 0.9.6.4)
       Newtonsoft.Json (>= 9.0.1)

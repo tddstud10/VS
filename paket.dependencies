@@ -27,3 +27,8 @@ group TddStud10
     source https://ci.appveyor.com/nuget/engine-is6vufvqx0ah
     nuget TddStud10.Engine 
     
+
+group Build
+source https://www.nuget.org/api/v2
+
+nuget VsixUtil
