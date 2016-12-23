@@ -72,7 +72,15 @@ Target "Build" (fun _ ->
     let ret =
         ExecProcess (fun info ->
             info.FileName <- buildDir @@ "R4nd0mApps.TddStud10.VsixEditor.exe"
-            info.Arguments <- vsixWithPdb) (TimeSpan.FromSeconds 30.0)
+            info.Arguments <- "injectpdb " + vsixWithPdb) (TimeSpan.FromSeconds 30.0)
+    if ret <> 0 then failwithf "VsixEdtor errored out"
+
+    let dfVsix = buildDir @@ vsixName.Replace(".org", ".df")
+    CopyFile dfVsix vsixWithPdb
+    let ret =
+        ExecProcess (fun info ->
+            info.FileName <- buildDir @@ "R4nd0mApps.TddStud10.VsixEditor.exe"
+            info.Arguments <- "dfize " + dfVsix) (TimeSpan.FromSeconds 30.0)
     if ret <> 0 then failwithf "VsixEdtor errored out"
 )
 
