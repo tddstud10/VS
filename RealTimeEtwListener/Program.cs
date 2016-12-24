@@ -1,17 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.Diagnostics.Tracing;
+﻿using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Session;
 using R4nd0mApps.TddStud10;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text;
 
 namespace RealTimeEtwListener
 {
     public static class Program
     {
-        private const string SessionName = Constants.RealTimeSessionName;
+        private static readonly string Suffix = Assembly.GetExecutingAssembly().GetName().Name.EndsWith(".DF", StringComparison.Ordinal) ? "-DF" : "";
+        private static readonly string SessionName = Constants.RealTimeSessionName + Suffix;
+        private static readonly string ProviderName = Constants.EtwProviderNameAllLogs + Suffix;
 
         private static readonly IReadOnlyDictionary<TraceEventLevel, ConsoleColor> eventLevelColorMap = new Dictionary<TraceEventLevel, ConsoleColor>()
         {
@@ -68,7 +71,7 @@ namespace RealTimeEtwListener
 
         private static void EnableProviders(TraceEventSession session)
         {
-            session.EnableProvider(Constants.EtwProviderNameAllLogs);
+            session.EnableProvider(ProviderName);
         }
 
         private static void ProcessTraceEvent(TraceEvent data)

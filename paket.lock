@@ -672,17 +672,18 @@ NUGET
       System.Threading (>= 4.3) - framework: dnxcore50, >= netstandard13
       System.Xml.ReaderWriter (>= 4.3) - framework: dnxcore50, netstandard10, >= netstandard13
   remote: https://ci.appveyor.com/nuget/common-wqs82t184w0x
-    TddStud10.Common (0.1.0-ci0074)
+    TddStud10.Common (0.2.1-ci0079)
       FSharp.Core (>= 3.1.2.5)
   remote: https://ci.appveyor.com/nuget/engine-is6vufvqx0ah
-    TddStud10.Engine (0.1.0-ci0111)
+    TddStud10.Engine (0.2.0-ci0113)
       FSharp.Core (>= 3.1.2.5)
       Mono.Cecil (>= 0.9.6.4)
       Newtonsoft.Json (>= 9.0.1)
       Suave (>= 1.1.3)
-      TddStud10.Common (>= 0.1.0-ci0071)
-      TddStud10.TestHost (>= 0.1.0-ci0003)
+      TddStud10.Common (>= 0.2.1-ci0079)
+      TddStud10.TestHost (>= 0.2.0-ci0005)
   remote: https://ci.appveyor.com/nuget/testhost-rrsttutj8jym
-    TddStud10.TestHost (0.1.0-ci0003)
+    TddStud10.TestHost (0.2.0-ci0005)
       FSharp.Core (>= 3.1.2.5)
-      TddStud10.Common (>= 0.1.0-ci0071)
+      Mono.Cecil (>= 0.9.6.4)
+      TddStud10.Common (>= 0.2.1-ci0079)
