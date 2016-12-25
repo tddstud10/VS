@@ -5,7 +5,7 @@ open System.IO
 
 let private cleanFiles path = 
     printfn "... Cleaning up %s" path
-    let excl = [ "Microsoft.VisualStudio."; "FSharp.Core"; "System.Xml"; "Newtonsoft.Json" ]
+    let excl = [ "Microsoft.VisualStudio."; "System.Xml"; "Newtonsoft.Json" ]
     let incl = [ "Microsoft.VisualStudio.TestPlatform" ]
     path
     |> fun d -> Directory.GetFiles(d, "*", SearchOption.AllDirectories)

@@ -3,6 +3,7 @@
 open Mono.Cecil
 open System
 open System.IO
+open System.Text
 open System.Text.RegularExpressions
 open System.Xml
 
@@ -15,23 +16,25 @@ let private renameExeConfigFiles path =
     path
 
 let private renameFile file = 
-    let newFile = sprintf "%s.DF%s" (Path.GetFileNameWithoutExtension(file)) (Path.GetExtension(file))
-    File.Copy(file, Path.Combine(Path.GetDirectoryName(file), newFile))
+    let newFileName = sprintf "%s.DF%s" (Path.GetFileNameWithoutExtension(file)) (Path.GetExtension(file))
+    let newFile = Path.Combine(Path.GetDirectoryName(file), newFileName)
+    File.Copy(file, newFile)
     File.Delete(file)
+    newFile
 
 let private readAssembly buildRoot file = 
     let r = DefaultAssemblyResolver()
     r.GetSearchDirectories() |> Array.iter r.RemoveSearchDirectory
     r.AddSearchDirectory(buildRoot)
-    r.AddSearchDirectory(file)
-    let rp = ReaderParameters(AssemblyResolver = r)
-    AssemblyDefinition.ReadAssembly(file, rp)
+    r.AddSearchDirectory(Path.GetDirectoryName(file))
+    let rp = ReaderParameters(AssemblyResolver = r, ReadSymbols = true)
+    file, AssemblyDefinition.ReadAssembly(file, rp)
 
-let private renameAssembly (asm : AssemblyDefinition) = 
+let private renameAssembly (f, asm : AssemblyDefinition) = 
     asm.Name <- new AssemblyNameDefinition(asm.Name.Name + ".DF", asm.Name.Version)
-    asm
+    f, asm
 
-let private renameAssemblyRefs (asm : AssemblyDefinition) = 
+let private renameAssemblyRefs (f, asm : AssemblyDefinition) = 
     let tddStud10Refs = 
         asm.MainModule.AssemblyReferences
         |> Seq.filter (fun ar -> Regex.IsMatch(ar.Name, ".*tddstud10.*", RegexOptions.IgnoreCase))
@@ -40,9 +43,9 @@ let private renameAssemblyRefs (asm : AssemblyDefinition) =
                          asm.MainModule.AssemblyReferences.Remove(r) |> ignore
                          r.Name <- r.Name + ".DF"
                          asm.MainModule.AssemblyReferences.Add(r))
-    asm
+    f, asm
 
-let private changeEtwProviderName (asm : AssemblyDefinition) = 
+let private changeEtwProviderName (f, asm : AssemblyDefinition) = 
     let t = asm.MainModule.Types |> Seq.tryFind (fun t -> t.FullName.Contains(".WindowsLogger"))
     match t with
     | Some t -> 
@@ -54,26 +57,38 @@ let private changeEtwProviderName (asm : AssemblyDefinition) =
         newA.Properties.Add(CustomAttributeNamedArgument(p.Name, newArg))
         t.CustomAttributes.Add(newA)
     | None -> ()
-    asm
+    f, asm
 
-let private resignAndSaveAssembly buildRoot (file : string) (asm : AssemblyDefinition) = 
+let private changeCommonUIResourceName (f, asm : AssemblyDefinition) = 
+    if asm.Name.Name = "R4nd0mApps.TddStud10.Hosts.CommonUI.DF" then
+        let res = asm.MainModule.Resources |> Seq.find (fun r -> r.Name = "R4nd0mApps.TddStud10.Hosts.CommonUI.g.resources")
+        asm.MainModule.Resources.Remove(res) |> ignore
+        res.Name <- "R4nd0mApps.TddStud10.Hosts.CommonUI.DF.g.resources"
+        asm.MainModule.Resources.Add(res)
+    else
+        ()
+    f, asm
+
+let private resignAndSaveAssembly buildRoot (file: string, asm : AssemblyDefinition) = 
     let snKeyPair = new System.Reflection.StrongNameKeyPair(File.ReadAllBytes(Path.Combine(buildRoot, "tddstud10.snk")))
     let wp = WriterParameters(WriteSymbols = true, StrongNameKeyPair = snKeyPair)
     asm.Write(file, wp)
-    file
 
 let private renameAssemblyFiles file = 
     [ file
       Path.ChangeExtension(file, "pdb") ]
-    |> Seq.iter renameFile
+    |> Seq.map renameFile
+    |> Seq.toList
+    |> List.head
 
-let private editTddStud10Assembly buildRoot (file : string) = 
-    readAssembly buildRoot file
-    |> renameAssembly
-    |> renameAssemblyRefs
-    |> changeEtwProviderName
-    |> resignAndSaveAssembly buildRoot file
-    |> renameAssemblyFiles
+let private editTddStud10Assembly buildRoot = 
+    renameAssemblyFiles
+    >> readAssembly buildRoot
+    >> renameAssembly
+    >> renameAssemblyRefs
+    >> changeEtwProviderName
+    >> changeCommonUIResourceName
+    >> resignAndSaveAssembly buildRoot
 
 let private editAllTddStud10Assemblies buildRoot path = 
     printfn "... Editing assemblies at %s" path
@@ -82,19 +97,40 @@ let private editAllTddStud10Assemblies buildRoot path =
     |> Seq.iter (editTddStud10Assembly buildRoot)
     path
 
-let private changeVsixManifest path = 
+let private editVsixManifest path = 
     let vsixManifest = Path.Combine(path, "extension.vsixmanifest")
     printfn "... Editing VSIX manifest at %s" vsixManifest
     let doc = XmlDocument()
     doc.Load(vsixManifest)
     let nsm = new XmlNamespaceManager(doc.NameTable)
     nsm.AddNamespace("v", "http://schemas.microsoft.com/developer/vsx-schema/2011")
+    // Change DisplayName and Version
     let node = doc.SelectSingleNode("/v:PackageManifest/v:Metadata/v:DisplayName", nsm)
     node.InnerText <- node.InnerText + " (Dogfood)"
     let node = doc.SelectSingleNode("/v:PackageManifest/v:Metadata/v:Identity/@Version", nsm) :?> XmlAttribute
     let v = Version(node.Value)
-    node.Value <- Version(v.Major, v.Minor, v.Build, 9).ToString()
+    node.Value <- Version(v.Major, v.Minor, v.Build, 999).ToString()
+    // Change Assets
+    doc.SelectNodes("/v:PackageManifest/v:Assets/v:Asset/@Path", nsm)
+    |> Seq.cast<XmlAttribute>
+    |> Seq.iter 
+           (fun a -> 
+           a.Value <- sprintf "%s.DF%s" (Path.GetFileNameWithoutExtension(a.Value)) (Path.GetExtension(a.Value)))
     doc.Save(vsixManifest)
+    path
+
+let private editPkgdef path = 
+    let pkgdef = Path.Combine(path, "R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.pkgdef")
+    printfn "... Editing PKGDEF at %s" pkgdef
+    let pkgdefContents = File.ReadAllText(pkgdef)
+    
+    let s = 
+        if pkgdefContents.Contains("R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.dll") then 
+            pkgdefContents.Replace
+                ("R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.dll", 
+                 "R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.DF.dll")
+        else failwithf "R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.dll not found in %s" pkgdef
+    File.WriteAllText(pkgdef, s, Encoding.Unicode)
     path
 
 let dogfoodize vsixPath = 
@@ -106,6 +142,7 @@ let dogfoodize vsixPath =
     |> Common.unzipTo vsixPath
     |> renameExeConfigFiles
     |> editAllTddStud10Assemblies buildRoot
-    |> changeVsixManifest
+    |> editVsixManifest
+    |> editPkgdef
     |> Common.zipTo vsixPath
     printfn "VsixEditor: Done!"

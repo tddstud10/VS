@@ -66,22 +66,6 @@ Target "Build" (fun _ ->
     // AppVeyor workaround
     !! @"packages\Newtonsoft.Json\lib\net45\Newtonsoft.Json.dll"
     |> CopyFiles buildDir
-    
-    let vsixWithPdb = buildDir @@ vsixName.Replace(".org", "")
-    CopyFile vsixWithPdb (buildDir @@ vsixName) 
-    let ret =
-        ExecProcess (fun info ->
-            info.FileName <- buildDir @@ "R4nd0mApps.TddStud10.VsixEditor.exe"
-            info.Arguments <- "injectpdb " + vsixWithPdb) (TimeSpan.FromSeconds 30.0)
-    if ret <> 0 then failwithf "VsixEdtor errored out"
-
-    let dfVsix = buildDir @@ vsixName.Replace(".org", ".df")
-    CopyFile dfVsix vsixWithPdb
-    let ret =
-        ExecProcess (fun info ->
-            info.FileName <- buildDir @@ "R4nd0mApps.TddStud10.VsixEditor.exe"
-            info.Arguments <- "dfize " + dfVsix) (TimeSpan.FromSeconds 30.0)
-    if ret <> 0 then failwithf "VsixEdtor errored out"
 )
 
 Target "GitLink" (fun _ ->
@@ -114,7 +98,21 @@ Target "Test" DoNothing
 Target "UnitTests" (runTest "/*.UnitTests*.dll")
 
 Target "Package" (fun _ ->
-    printf "TBD: Inject pdbs into the VSIX. and generate dogfood vsix"
+    let vsixWithPdb = buildDir @@ vsixName.Replace(".org", "")
+    CopyFile vsixWithPdb (buildDir @@ vsixName) 
+    let ret =
+        ExecProcess (fun info ->
+            info.FileName <- buildDir @@ "R4nd0mApps.TddStud10.VsixEditor.exe"
+            info.Arguments <- "injectpdb " + vsixWithPdb) (TimeSpan.FromSeconds 30.0)
+    if ret <> 0 then failwithf "VsixEdtor errored out"
+
+    let dfVsix = buildDir @@ vsixName.Replace(".org", ".DF")
+    CopyFile dfVsix vsixWithPdb
+    let ret =
+        ExecProcess (fun info ->
+            info.FileName <- buildDir @@ "R4nd0mApps.TddStud10.VsixEditor.exe"
+            info.Arguments <- "dfize " + dfVsix) (TimeSpan.FromSeconds 30.0)
+    if ret <> 0 then failwithf "VsixEdtor errored out"
 )
 
 Target "Publish" (fun _ ->
