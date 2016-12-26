@@ -3,6 +3,7 @@ namespace R4nd0mApps.TddStud10.Logger
 open Microsoft.ApplicationInsights
 open Microsoft.ApplicationInsights.DataContracts
 open Microsoft.ApplicationInsights.Extensibility
+open R4nd0mApps.TddStud10
 open System
 open System.IO
 open System.Reflection
@@ -33,6 +34,12 @@ type internal WindowsTelemetryClient() =
         member __.Initialize(version, hostVersion, hostEdition) = 
             tc.InstrumentationKey <- loadKey()
             tc.Context.Session.Id <- Guid.NewGuid().ToString()
+            let version =
+                if Common.DFizer.isDF() then
+                    let version = Version(version)
+                    Version(version.Major, version.Minor, version.Build, 999).ToString()
+                else
+                    version
             tc.Context.Component.Version <- version
             tc.Context.Device.Type <- hostVersion
             tc.Context.Device.Model <- hostEdition

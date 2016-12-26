@@ -6,8 +6,6 @@ module internal Constants =
     let ProductName = "Test Driven Development Studio";
     [<Literal>]
     let ProductVersion = "0.0.0.0";
-    [<Literal>]
-    let ProductVariant = "";
 
     [<Literal>]
     let RealTimeSessionName = "R4nd0mApps-TddStud10-Realtime-Session";

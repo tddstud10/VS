@@ -8,7 +8,7 @@
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>RealTimeEtwListener</RootNamespace>
-    <AssemblyName>RealTimeEtwListener</AssemblyName>
+    <AssemblyName>TddStud10.RealTimeEtwListener</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp>
@@ -64,6 +64,9 @@
     <Compile Include="Properties\AssemblyProps.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>

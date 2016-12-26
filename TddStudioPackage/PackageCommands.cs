@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using R4nd0mApps.TddStud10.Common;
 using R4nd0mApps.TddStud10.Common.Domain;
 using R4nd0mApps.TddStud10.Engine;
 using R4nd0mApps.TddStud10.Engine.Core;
@@ -131,7 +132,7 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
         private void ExecuteViewTddStud10Logs(object sender, EventArgs e)
         {
             var pkgPath = Path.GetDirectoryName(Path.GetFullPath(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath));
-            var loggerPath = Path.Combine(pkgPath, string.Format(@"rtlogs\RealTimeEtwListener{0}.exe", Constants.ProductVariant));
+            var loggerPath = Path.Combine(pkgPath, string.Format(@"rtlogs\TddStud10.RealTimeEtwListener{0}.exe", DFizer.isDF() ? ".DF" : ""));
             try
             {
                 ProcessStartInfo info = new ProcessStartInfo(loggerPath);

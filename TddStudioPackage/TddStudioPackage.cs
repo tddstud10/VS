@@ -9,6 +9,7 @@ using R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.Core;
 using R4nd0mApps.TddStud10.Logger;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -63,6 +64,8 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
         {
             base.Initialize();
 
+            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainAssemblyResolve;
+
             _solution = Services.GetService<SVsSolution, IVsSolution2>();
             if (_solution != null)
             {
@@ -80,6 +83,18 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
             TelemetryClient.Initialize(Constants.ProductVersion, _dte.Version, _dte.Edition);
 
             Logger.LogInfo("Initialized Package successfully.");
+        }
+
+        private Assembly CurrentDomainAssemblyResolve(object sender, ResolveEventArgs args)
+        {
+            var asmName = new AssemblyName(args.Name);
+            if (asmName.Name != "R4nd0mApps.TddStud10.Hosts.CommonUI")
+            {
+                return null;
+            }
+
+            asmName.Name += ".DF";
+            return Assembly.Load(asmName.ToString());
         }
 
         protected override void Dispose(bool disposing)
