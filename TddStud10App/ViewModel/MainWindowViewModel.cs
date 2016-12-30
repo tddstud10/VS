@@ -6,8 +6,8 @@ using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using R4nd0mApps.TddStud10.Common.Domain;
-using R4nd0mApps.TddStud10.Engine;
 using R4nd0mApps.TddStud10.Engine.Core;
+using R4nd0mApps.TddStud10.Hosts.VS;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -16,7 +16,7 @@ using System.Windows.Input;
 
 namespace R4nd0mApps.TddStud10.Hosts.Console.TddStud10App.ViewModel
 {
-    public class MainWindowViewModel : ViewModelBase, IEngineHost
+    public class MainWindowViewModel : ViewModelBase, IEngineCallback
     {
         private RunState _runState;
         public RunState RunState
@@ -116,7 +116,7 @@ namespace R4nd0mApps.TddStud10.Hosts.Console.TddStud10App.ViewModel
         {
             get
             {
-                return !_currentRunCancelled && EngineLoader.IsRunInProgress();
+                return EngineLoader.IsEngineEnabled() && EngineLoader.IsRunInProgress();
             }
         }
 
@@ -128,7 +128,6 @@ namespace R4nd0mApps.TddStud10.Hosts.Console.TddStud10App.ViewModel
             }
         }
 
-        private bool _currentRunCancelled;
         private readonly EditorHostLoader _editorHostLoader;
         private readonly EditorHost _editorHost;
         private IClassificationFormatMapService _classificationFormatMapService;
@@ -158,7 +157,7 @@ namespace R4nd0mApps.TddStud10.Hosts.Console.TddStud10App.ViewModel
             CancelRunCommand = new RelayCommand(
                 () =>
                 {
-                    _currentRunCancelled = true;
+                    EngineLoader.EnableEngine();
                     RaisePropertyChanged(() => IsRunInProgress);
                 });
 
@@ -256,13 +255,11 @@ namespace R4nd0mApps.TddStud10.Hosts.Console.TddStud10App.ViewModel
             var cfg = EngineConfigLoader.load(new EngineConfig(), FilePath.NewFilePath(slnPath));
             EngineLoader.Load(
                 this,
-                DataStore.Instance,
-                new EngineLoaderParams
-                {
-                    EngineConfig = cfg,
-                    SolutionPath = FilePath.NewFilePath(slnPath),
-                    SessionStartTime = DateTime.UtcNow
-                });
+                new EngineParams(
+                    HostVersion,
+                    cfg,
+                    FilePath.NewFilePath(slnPath),
+                    DateTime.UtcNow));
             EngineLoader.EnableEngine();
             RaisePropertyChanged(() => EngineState);
             CommandManager.InvalidateRequerySuggested();
@@ -333,12 +330,7 @@ namespace R4nd0mApps.TddStud10.Hosts.Console.TddStud10App.ViewModel
 
         #region IEngineHost Members
 
-        public bool CanContinue()
-        {
-            return !_currentRunCancelled;
-        }
-
-        public void RunStateChanged(RunState rs)
+        public void OnRunStateChanged(RunState rs)
         {
             DispatcherHelper.CheckBeginInvokeOnUI(
                 () =>
@@ -347,7 +339,7 @@ namespace R4nd0mApps.TddStud10.Hosts.Console.TddStud10App.ViewModel
                 });
         }
 
-        public void RunStarting(RunStartParams rd)
+        public void OnRunStarting(RunStartParams rd)
         {
             DispatcherHelper.CheckBeginInvokeOnUI(
                 () =>
@@ -359,7 +351,7 @@ namespace R4nd0mApps.TddStud10.Hosts.Console.TddStud10App.ViewModel
                 });
         }
 
-        public void RunStepStarting(RunStepStartingEventArg rsea)
+        public void OnRunStepStarting(RunStepStartingEventArg rsea)
         {
             DispatcherHelper.CheckBeginInvokeOnUI(
                 () =>
@@ -384,7 +376,7 @@ namespace R4nd0mApps.TddStud10.Hosts.Console.TddStud10App.ViewModel
                 });
         }
 
-        public void RunStepEnded(RunStepEndedEventArg ea)
+        public void OnRunStepEnded(RunStepEndedEventArg ea)
         {
             DispatcherHelper.CheckBeginInvokeOnUI(
                 () =>
@@ -415,13 +407,13 @@ namespace R4nd0mApps.TddStud10.Hosts.Console.TddStud10App.ViewModel
                 });
         }
 
-        public void RunEnded(RunStartParams rsp)
+        public void OnRunEnded(RunStartParams rsp)
         {
             DispatcherHelper.CheckBeginInvokeOnUI(
                 () =>
                 {
                     AddTextToConsole(sb => sb.AppendFormat("### Ended run."));
-                    _currentRunCancelled = false;
+                    EngineLoader.EnableEngine();
                 });
         }
 

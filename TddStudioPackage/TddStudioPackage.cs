@@ -1,8 +1,9 @@
-﻿using Microsoft.VisualStudio;
+﻿using EnvDTE;
+using EnvDTE80;
+using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using R4nd0mApps.TddStud10.Common.Domain;
-using R4nd0mApps.TddStud10.Engine;
 using R4nd0mApps.TddStud10.Engine.Core;
 using R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage;
 using R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.Core;
@@ -12,7 +13,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace R4nd0mApps.TddStud10.Hosts.VS
 {
@@ -22,7 +22,7 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExists_string)]
     [Guid(PkgGuids.GuidTddStud10Pkg)]
-    public sealed class TddStud10Package : Package, IVsSolutionEvents, IEngineHost
+    public sealed class TddStud10Package : Package, IVsSolutionEvents, IEngineCallback
     {
         private static ILogger Logger = R4nd0mApps.TddStud10.Logger.LoggerFactory.logger;
         private static ITelemetryClient TelemetryClient = R4nd0mApps.TddStud10.Logger.TelemetryClientFactory.telemetryClient;
@@ -34,7 +34,9 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
         private uint solutionEventsCookie;
 
         private IVsSolution2 _solution;
-        private EnvDTE.DTE _dte;
+        private DTE _dte;
+        private Events2 _events;
+        private BuildEvents _buildEvents;
 
         public VsStatusBarIconHost IconHost { get; private set; }
 
@@ -72,8 +74,11 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
                 _solution.AdviseSolutionEvents(this, out solutionEventsCookie).ThrowOnFailure();
             }
 
-            _dte = Services.GetService<EnvDTE.DTE>();
-
+            _dte = Services.GetService<DTE>();
+            _events = (Events2)_dte.Events;
+            _buildEvents = _events.BuildEvents;
+            _buildEvents.OnBuildBegin += OnBuildBegin;
+            _buildEvents.OnBuildDone += OnBuildDone;
             new PackageCommands(this).AddCommands();
 
             IconHost = VsStatusBarIconHost.CreateAndInjectIntoVsStatusBar();
@@ -142,13 +147,12 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
             var cfg = EngineConfigLoader.load(new EngineConfig(), FilePath.NewFilePath(GetSolutionPath()));
             EngineLoader.Load(
                 this,
-                DataStore.Instance,
-                new EngineLoaderParams
-                {
-                    EngineConfig = cfg,
-                    SolutionPath = FilePath.NewFilePath(GetSolutionPath()),
-                    SessionStartTime = DateTime.UtcNow
-                });
+                new EngineParams(
+                    HostVersion,
+                    cfg,
+                    FilePath.NewFilePath(GetSolutionPath()),
+                    DateTime.UtcNow
+                ));
 
             if (!cfg.IsDisabled)
             {
@@ -202,41 +206,32 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
 
         #endregion
 
-        #region IEngineHost Members
+        #region Events2.BuildEvents
 
-        public bool CanContinue()
+        private void OnBuildBegin(vsBuildScope scope, vsBuildAction action)
         {
-            if (!this.GetService<SVsSolution, IVsSolution>().GetProperty<bool>((int)__VSPROPID4.VSPROPID_IsSolutionFullyLoaded))
-            {
-                Logger.LogInfo("Solution is not fully loaded. Asking to stop.");
-                return false;
-            }
-
-            if (this.GetService<SVsSolution, IVsSolution>().GetProperty<bool>((int)__VSPROPID2.VSPROPID_IsSolutionClosing))
-            {
-                Logger.LogInfo("Solution is closing. Asking to stop.");
-                return false;
-            }
-
-            if (_dte.Solution.SolutionBuild.BuildState == EnvDTE.vsBuildState.vsBuildStateInProgress)
-            {
-                Logger.LogInfo("Build in progress. Asking to stop.");
-                return false;
-            }
-
-            return true;
+            EngineLoader.DisableEngine();
         }
 
-        public void RunStateChanged(RunState rs)
+        private void OnBuildDone(vsBuildScope scope, vsBuildAction action)
+        {
+            EngineLoader.EnableEngine();
+        }
+
+        #endregion Events2.BuildEvents
+
+        #region IEngineHost Members
+
+        public void OnRunStateChanged(RunState rs)
         {
             IconHost.RunState = rs;
         }
 
-        public void RunStarting(RunStartParams rd)
+        public void OnRunStarting(RunStartParams rd)
         {
         }
 
-        public void RunStepStarting(RunStepStartingEventArg rsea)
+        public void OnRunStepStarting(RunStepStartingEventArg rsea)
         {
         }
 
@@ -244,7 +239,7 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
         {
         }
 
-        public void RunStepEnded(RunStepEndedEventArg ea)
+        public void OnRunStepEnded(RunStepEndedEventArg ea)
         {
         }
 
@@ -252,22 +247,10 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
         {
         }
 
-        public void RunEnded(RunStartParams rsp)
+        public void OnRunEnded(RunStartParams rsp)
         {
         }
 
         #endregion
-
-        private T GetPropertyValue<T>(IVsSolution solutionInterface, __VSPROPID solutionProperty)
-        {
-            object value = null;
-            T result = default(T);
-
-            if (solutionInterface.GetProperty((int)solutionProperty, out value) == Microsoft.VisualStudio.VSConstants.S_OK)
-            {
-                result = (T)value;
-            }
-            return result;
-        }
     }
 }

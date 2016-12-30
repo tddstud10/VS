@@ -190,6 +190,10 @@
       <Project>{99f961a3-47a3-4c13-b206-b2437d8f199a}</Project>
       <Name>TddStudioPackage</Name>
     </ProjectReference>
+    <ProjectReference Include="..\TddStudioPackage.Core\TddStudioPackage.Core.fsproj">
+      <Project>{0055B0CC-39BA-4DEA-AD3E-231CFFE4ED58}</Project>
+      <Name>TddStudioPackage.Core</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

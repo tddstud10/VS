@@ -63,6 +63,7 @@
     <Compile Include="AssemblyAttributes.fs" />
     <Compile Include="Services.fs" />
     <Content Include="paket.references" />
+    <Compile Include="IEngine.fs" />
     <Compile Include="PkgGuids.fs" />
     <Compile Include="PkgCmdID.fs" />
     <Compile Include="ErrorHandlerExtensions.fs" />

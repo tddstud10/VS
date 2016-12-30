@@ -2,7 +2,6 @@
 using Microsoft.VisualStudio.Shell.Interop;
 using R4nd0mApps.TddStud10.Common;
 using R4nd0mApps.TddStud10.Common.Domain;
-using R4nd0mApps.TddStud10.Engine;
 using R4nd0mApps.TddStud10.Engine.Core;
 using R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.Core;
 using R4nd0mApps.TddStud10.Logger;

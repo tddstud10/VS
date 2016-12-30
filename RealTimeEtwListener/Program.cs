@@ -12,9 +12,9 @@ namespace RealTimeEtwListener
 {
     public static class Program
     {
-        private static readonly string Suffix = Assembly.GetExecutingAssembly().GetName().Name.EndsWith(".DF", StringComparison.Ordinal) ? "DF" : "";
-        private static readonly string SessionName = string.Format("{0}-{1}", Constants.RealTimeSessionName, Suffix);
-        private static readonly string ProviderName = string.Format("{0}-{1}", Constants.EtwProviderNameAllLogs, Suffix);
+        private static readonly string Suffix = Assembly.GetExecutingAssembly().GetName().Name.EndsWith(".DF", StringComparison.Ordinal) ? "-DF" : "";
+        private static readonly string SessionName = string.Format("{0}{1}", Constants.RealTimeSessionName, Suffix);
+        private static readonly string ProviderName = string.Format("{0}{1}", Constants.EtwProviderNameAllLogs, Suffix);
 
         private static readonly IReadOnlyDictionary<TraceEventLevel, ConsoleColor> eventLevelColorMap = new Dictionary<TraceEventLevel, ConsoleColor>()
         {
@@ -44,7 +44,7 @@ namespace RealTimeEtwListener
             {
                 session.StopOnDispose = true;
 
-                Console.Title = string.Format("{0} ({1})", Constants.ProductName, Suffix);
+                Console.Title = string.Format("{0} ({1})", Constants.ProductName, SessionName);
                 Console.CancelKeyPress += delegate (object sender, ConsoleCancelEventArgs e) { session.Dispose(); };
 
                 using (var source = new ETWTraceEventSource(SessionName, TraceEventSourceType.Session))
