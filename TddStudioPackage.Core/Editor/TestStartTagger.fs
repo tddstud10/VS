@@ -7,7 +7,10 @@ open R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.EditorFrameworkExtensions
 open System.Threading
 open R4nd0mApps.TddStud10.Engine.Core
 
-type TestStartTagger(buffer : ITextBuffer, dataStore : IDataStore) as self = 
+type TestStartTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : XDataStoreEvents) as self = 
+    inherit DisposableTagger()
+
+    let disposed : bool ref = ref false
     let syncContext = SynchronizationContext.Current
     let tagsChanged = Event<_, _>()
     
@@ -23,7 +26,15 @@ type TestStartTagger(buffer : ITextBuffer, dataStore : IDataStore) as self =
                           SnapshotSpanEventArgs(SnapshotSpan(buffer.CurrentSnapshot, 0, buffer.CurrentSnapshot.Length))))), 
              null)
     
-    do dataStore.TestCasesUpdated.Add fireTagsChanged
+    let tcUpdatedSub = dse.TestCasesUpdated.Subscribe fireTagsChanged
+    
+    override __.Dispose(disposing) = 
+        if not disposed.Value then 
+            if disposing then 
+                tcUpdatedSub.Dispose()
+            disposed := true
+            base.Dispose(disposing)
+
     interface ITagger<TestStartTag> with
         
         member __.GetTags(spans : _) : _ = 

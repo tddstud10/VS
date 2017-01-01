@@ -42,6 +42,10 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
 
         public static TddStud10Package Instance { get; private set; }
 
+        public static IXDataStore DataStore { get; private set; }
+
+        public static XDataStoreEvents DataStoreEvents { get; private set; }
+
         public HostVersion HostVersion
         {
             get
@@ -84,6 +88,10 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
             IconHost = VsStatusBarIconHost.CreateAndInjectIntoVsStatusBar();
 
             Instance = this;
+
+            DataStore = new XDataStore();
+            DataStoreEvents = new XDataStoreEvents();
+            DataStore.Connect(DataStoreEvents);
 
             TelemetryClient.Initialize(Constants.ProductVersion, _dte.Version, _dte.Edition);
 

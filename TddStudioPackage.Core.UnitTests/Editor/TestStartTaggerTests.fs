@@ -11,10 +11,12 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Tagging
 
 let createTST s pdltp p t = 
-    let ds = DataStore() :> IDataStore
+    let ds = XDataStore(DataStore() :> IDataStore) :> IXDataStore
+    let dse = XDataStoreEvents()
+    ds.Connect(dse)
     RunStartParams.Create (EngineConfig()) DateTime.Now (FilePath s) |> ds.UpdateRunStartParams
     let tb = FakeTextBuffer(t, p) :> ITextBuffer
-    let tmt = TestStartTagger(tb, ds) :> ITagger<_>
+    let tmt = new TestStartTagger(tb, ds, dse) :> ITagger<_>
     let spy = CallSpy1<SnapshotSpanEventArgs>(Throws(Exception()))
     tmt.TagsChanged.Add(spy.Func >> ignore)
     pdltp

@@ -55,10 +55,12 @@ let getNSSC (DocumentCoordinate ln) (tb : ITextBuffer) =
     NormalizedSnapshotSpanCollection(ss)
 
 let createCCT s tb ta = 
-    let ta : SnapshotSnapsToTagSpan<SequencePointTag> = ta
-    let ds = DataStore() :> IDataStore
+    let ta = SnapshotSnapsToTagSpan ta
+    let ds = XDataStore(DataStore() :> IDataStore) :> IXDataStore
+    let dse = XDataStoreEvents()
+    ds.Connect(dse)
     RunStartParams.Create (EngineConfig()) DateTime.Now (FilePath s) |> ds.UpdateRunStartParams
-    let tmt = CodeCoverageTagger(tb, ta, ds) :> ITagger<_>
+    let tmt = new CodeCoverageTagger(tb, ta, ds, dse) :> ITagger<_>
     let spy = CallSpy1<SnapshotSpanEventArgs>(Throws(Exception()))
     tmt.TagsChanged.Add(spy.Func >> ignore)
     ds, tb, tmt, spy
@@ -88,7 +90,7 @@ let stubSp1 = createSP stubSpidXTb stubSpid1 stubSpidXLineNumber
 let stubSp2 = createSP stubSpidXTb stubSpid2 stubSpidXLineNumber
 
 let updateCoverageInfo (spCovData : list<SequencePointId * list<SimpleTestCase * option<SimpleTestResult>>>) 
-    (ds : IDataStore) = 
+    (ds : IXDataStore) = 
     let ptir = PerTestIdDResults()
     let pspiri = PerSequencePointIdTestRunId()
     

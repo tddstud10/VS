@@ -7,9 +7,27 @@ open R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.EditorFrameworkExtensions
 open System.Threading
 open R4nd0mApps.TddStud10.Engine.Core
 
-type CodeCoverageTagger(buffer : ITextBuffer, getspt : SnapshotSnapsToTagSpan<SequencePointTag>, dataStore : IDataStore) as self = 
+[<AutoOpen>]
+module TagAggregator =
+    type TagAggregator<'T> when 'T :> ITag =
+        | SnapshotSnapsToTagSpan of SnapshotSnapsToTagSpan<'T>
+        | ITagAggregator of ITagAggregator<'T>
+
+    let dispose =
+        function
+        | SnapshotSnapsToTagSpan _ -> ()
+        | ITagAggregator i -> i.Dispose()
+
+    let snapshotSnapsToTagSpan =
+        function
+        | SnapshotSnapsToTagSpan s -> s
+        | ITagAggregator i -> i.getTagSpans
+
+type CodeCoverageTagger(buffer : ITextBuffer, ta : TagAggregator<_>, dataStore : IXDataStore, dse : XDataStoreEvents) as self = 
+    inherit DisposableTagger()
     
     let logger = R4nd0mApps.TddStud10.Logger.LoggerFactory.logger
+    let disposed : bool ref = ref false
 
     let syncContext = SynchronizationContext.Current
     let tagsChanged = Event<_, _>()
@@ -26,10 +44,18 @@ type CodeCoverageTagger(buffer : ITextBuffer, getspt : SnapshotSnapsToTagSpan<Se
                           SnapshotSpanEventArgs(SnapshotSpan(buffer.CurrentSnapshot, 0, buffer.CurrentSnapshot.Length))))), 
              null)
     
-    do dataStore.SequencePointsUpdated.Add fireTagsChanged
-    do dataStore.CoverageInfoUpdated.Add fireTagsChanged
-    new(buffer : ITextBuffer, spta : ITagAggregator<SequencePointTag>, dataStore : IDataStore) = 
-        new CodeCoverageTagger(buffer, spta.getTagSpans, dataStore)
+    let spUpdatedSub = dse.SequencePointsUpdated.Subscribe fireTagsChanged
+    let ciUpdatedSub = dse.CoverageInfoUpdated.Subscribe fireTagsChanged
+    
+    override __.Dispose(disposing) = 
+        if not disposed.Value then 
+            if disposing then 
+                TagAggregator.dispose ta
+                ciUpdatedSub.Dispose()
+                spUpdatedSub.Dispose()
+            disposed := true
+            base.Dispose(disposing)
+        
     interface ITagger<CodeCoverageTag> with
         
         (* NOTE: We are assuming that 
@@ -38,7 +64,7 @@ type CodeCoverageTagger(buffer : ITextBuffer, getspt : SnapshotSnapsToTagSpan<Se
         member __.GetTags(spans : _) : _ = 
             let getTags _ _ = 
                 spans
-                |> getspt
+                |> TagAggregator.snapshotSnapsToTagSpan ta
                 |> Seq.map (fun tsp -> tsp, tsp.Tag.SptSequencePoint.id |> dataStore.GetRunIdsForTestsCoveringSequencePointId)
                 |> Seq.map (fun (tsp, rids) -> 
                        tsp, 

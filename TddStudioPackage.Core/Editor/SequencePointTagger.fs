@@ -3,9 +3,12 @@
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Tagging
 open R4nd0mApps.TddStud10.Common.Domain
+open R4nd0mApps.TddStud10.Engine.Core
 open R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.EditorFrameworkExtensions
 
-type SequencePointTagger(buffer : ITextBuffer, dataStore : IDataStore) = 
+type SequencePointTagger(buffer : ITextBuffer, dataStore : IXDataStore) = 
+    inherit DisposableTagger()
+
     let tagsChanged = Event<_, _>()
     interface ITagger<SequencePointTag> with
         

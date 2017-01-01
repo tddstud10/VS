@@ -64,6 +64,7 @@
     <Compile Include="Services.fs" />
     <Content Include="paket.references" />
     <Compile Include="IEngine.fs" />
+    <Compile Include="IDataStore.fs" />
     <Compile Include="PkgGuids.fs" />
     <Compile Include="PkgCmdID.fs" />
     <Compile Include="ErrorHandlerExtensions.fs" />
@@ -72,6 +73,7 @@
     <Compile Include="EditorFrameworkExtensions.fs" />
     <Compile Include="Editor\Domain.fs" />
     <Compile Include="Editor\HostIdeApi.fs" />
+    <Compile Include="Editor\DisposableTagger.fs" />
     <Compile Include="Editor\TestStartTagger.fs" />
     <Compile Include="Editor\SequencePointTagger.fs" />
     <Compile Include="Editor\CodeCoverageTagger.fs" />
