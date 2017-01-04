@@ -5,7 +5,11 @@ open System
 type DisposableTagger() as x = 
     let logger = R4nd0mApps.TddStud10.Logger.LoggerFactory.logger
     let disposed : bool ref = ref false
-    override x.Finalize() = x.Dispose(true)
+    // TODO: PARTHO: This causes InvalidOperationException. Figure out why finalize is being called without 
+    // object being fully initialized first.
+    // Additional information: The initialization of an object or value resulted in an object or 
+    // value being accessed recursively before it was fully initialized
+    //override x.Finalize() = x.Dispose(false)
     abstract Dispose : bool -> unit
     
     override __.Dispose(disposing) = 

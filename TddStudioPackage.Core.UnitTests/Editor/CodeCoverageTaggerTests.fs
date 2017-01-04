@@ -56,9 +56,8 @@ let getNSSC (DocumentCoordinate ln) (tb : ITextBuffer) =
 
 let createCCT s tb ta = 
     let ta = SnapshotSnapsToTagSpan ta
-    let ds = XDataStore(DataStore() :> IDataStore) :> IXDataStore
     let dse = XDataStoreEvents()
-    ds.Connect(dse)
+    let ds = XDataStore(DataStore() :> IDataStore, dse :> IXDataStoreCallback |> Some) :> IXDataStore
     RunStartParams.Create (EngineConfig()) DateTime.Now (FilePath s) |> ds.UpdateRunStartParams
     let tmt = new CodeCoverageTagger(tb, ta, ds, dse) :> ITagger<_>
     let spy = CallSpy1<SnapshotSpanEventArgs>(Throws(Exception()))

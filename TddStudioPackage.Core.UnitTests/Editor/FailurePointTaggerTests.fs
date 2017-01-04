@@ -12,9 +12,8 @@ open System.Collections.Concurrent
 open R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.EditorFrameworkExtensions
 
 let createFPT s pdltfi p t = 
-    let ds = XDataStore(DataStore() :> IDataStore) :> IXDataStore
     let dse = XDataStoreEvents()
-    ds.Connect(dse)
+    let ds = XDataStore(DataStore() :> IDataStore, dse :> IXDataStoreCallback |> Some) :> IXDataStore
     let tb = FakeTextBuffer(t, p) :> ITextBuffer
     let tmt = new FailurePointTagger(tb, ds, dse) :> ITagger<_>
     let spy = CallSpy1<SnapshotSpanEventArgs>(Throws(Exception()))

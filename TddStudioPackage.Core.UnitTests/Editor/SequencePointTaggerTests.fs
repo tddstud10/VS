@@ -12,7 +12,7 @@ open System.Collections.Concurrent
 open R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.EditorFrameworkExtensions
 
 let createSPT s pdsp p t = 
-    let ds = XDataStore(DataStore() :> IDataStore) :> IXDataStore
+    let ds = XDataStore(DataStore() :> IDataStore, None) :> IXDataStore
     let tb = FakeTextBuffer(t, p) :> ITextBuffer
     let spt = new SequencePointTagger(tb, ds) :> ITagger<_>
     let spy = CallSpy1<SnapshotSpanEventArgs>(Throws(Exception()))

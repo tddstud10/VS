@@ -10,9 +10,18 @@ using R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.Core;
 using R4nd0mApps.TddStud10.Logger;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.ServiceModel;
 using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.FSharp.Core;
+using R4nd0mApps.TddStud10.TestRuntime;
+using Process = EnvDTE.Process;
+using Task = System.Threading.Tasks.Task;
+using Thread = System.Threading.Thread;
 
 namespace R4nd0mApps.TddStud10.Hosts.VS
 {
@@ -41,10 +50,6 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
         public VsStatusBarIconHost IconHost { get; private set; }
 
         public static TddStud10Package Instance { get; private set; }
-
-        public static IXDataStore DataStore { get; private set; }
-
-        public static XDataStoreEvents DataStoreEvents { get; private set; }
 
         public HostVersion HostVersion
         {
@@ -88,10 +93,6 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
             IconHost = VsStatusBarIconHost.CreateAndInjectIntoVsStatusBar();
 
             Instance = this;
-
-            DataStore = new XDataStore();
-            DataStoreEvents = new XDataStoreEvents();
-            DataStore.Connect(DataStoreEvents);
 
             TelemetryClient.Initialize(Constants.ProductVersion, _dte.Version, _dte.Edition);
 
@@ -153,18 +154,19 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
         int IVsSolutionEvents.OnAfterOpenSolution(object pUnkReserved, int fNewSolution)
         {
             var cfg = EngineConfigLoader.load(new EngineConfig(), FilePath.NewFilePath(GetSolutionPath()));
-            EngineLoader.Load(
-                this,
-                new EngineParams(
-                    HostVersion,
-                    cfg,
-                    FilePath.NewFilePath(GetSolutionPath()),
-                    DateTime.UtcNow
-                ));
-
             if (!cfg.IsDisabled)
             {
+                EngineLoader.Load(
+                    this,
+                    new EngineParams(
+                        HostVersion,
+                        cfg,
+                        FilePath.NewFilePath(GetSolutionPath()),
+                        DateTime.UtcNow
+                    ));
                 EngineLoader.EnableEngine();
+
+                StartDataStoreSever();
             }
             else
             {
@@ -184,6 +186,8 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
 
         int IVsSolutionEvents.OnBeforeCloseSolution(object pUnkReserved)
         {
+            StopDataStoreSever();
+
             EngineLoader.DisableEngine();
             EngineLoader.Unload();
             IconHost.RunState = RunState.Initial;
@@ -260,5 +264,107 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
         }
 
         #endregion
+
+        public static ServiceHost DataStoreServer { get; private set; }
+
+        public static IXDataStore DataStore { get; private set; }
+
+        public static XDataStoreEvents DataStoreEvents { get; private set; }
+
+        private static void StartDataStoreSever()
+        {
+#if !REMOTE_DATASTORE
+            DataStoreEvents = new XDataStoreEvents();
+            DataStore = new XDataStore(Engine.Core.DataStore.Instance, FSharpOption<IXDataStoreCallback>.Some(DataStoreEvents));
+#else
+            Task.Run(() =>
+            {
+                try
+                {
+                    var address = CreateDataStoreServerEndpointAddress();
+                    Logger.LogInfo("Starting datastore server {0} ...", address);
+                    DataStoreServer = new ServiceHost(new XDataStore());
+                    DataStoreServer.AddServiceEndpoint(
+                        typeof(IXDataStore),
+                        new NetNamedPipeBinding(NetNamedPipeSecurityMode.None),
+                        address);
+                    DataStoreServer.Open();
+                    ConnectToDataStore();
+                }
+                catch (Exception e)
+                {
+                    Logger.LogInfo("Failed to start DS Sever: {0} ...", e);
+                }
+            });
+#endif
+        }
+
+        private static void StopDataStoreSever()
+        {
+#if !REMOTE_DATASTORE
+#else
+            DisconnectFromDataStore();
+
+            try
+            {
+                if (DataStoreServer != null)
+                {
+                    DataStoreServer.Close();
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogInfo("Failed to close connection to DS Sever: {0} ...", e);
+            }
+#endif
+        }
+
+#if !REMOTE_DATASTORE
+#else
+        private static void ConnectToDataStore()
+        {
+            try
+            {
+                DataStoreEvents = new XDataStoreEvents();
+
+                var address = CreateDataStoreServerEndpointAddress();
+                Logger.LogInfo("Initiating connection to {0} ...", address);
+                DataStore = DuplexChannelFactory<IXDataStore>.CreateChannel(
+                    new InstanceContext(DataStoreEvents),
+                    new NetNamedPipeBinding(NetNamedPipeSecurityMode.None),
+                    new EndpointAddress(address));
+                DataStore.Connect();
+                Logger.LogInfo("Connected to server.", address);
+            }
+            catch (Exception e)
+            {
+                Logger.LogInfo("Failed to connect to DS Sever: {0} ...", e);
+            }
+        }
+
+        private static void DisconnectFromDataStore()
+        {
+            try
+            {
+                if (DataStore != null)
+                {
+                    DataStore.Disconnect();
+                    ((IClientChannel)DataStore).Close();
+                    ((IDisposable)DataStore).Dispose();
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.LogInfo("Failed to close connection to DS Sever: {0} ...", e);
+            }
+        }
+
+        private static string CreateDataStoreServerEndpointAddress()
+        {
+            return string.Format(
+                "net.pipe://localhost/r4nd0mapps/tddstud10/XDataStore/{0}",
+                System.Diagnostics.Process.GetCurrentProcess().Id.ToString(CultureInfo.InvariantCulture));
+        }
+#endif
     }
 }

@@ -11,9 +11,8 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Tagging
 
 let createTST s pdltp p t = 
-    let ds = XDataStore(DataStore() :> IDataStore) :> IXDataStore
     let dse = XDataStoreEvents()
-    ds.Connect(dse)
+    let ds = XDataStore(DataStore() :> IDataStore, dse :> IXDataStoreCallback |> Some) :> IXDataStore
     RunStartParams.Create (EngineConfig()) DateTime.Now (FilePath s) |> ds.UpdateRunStartParams
     let tb = FakeTextBuffer(t, p) :> ITextBuffer
     let tmt = new TestStartTagger(tb, ds, dse) :> ITagger<_>
