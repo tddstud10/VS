@@ -12,9 +12,10 @@ open System.Collections.Concurrent
 open R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.EditorFrameworkExtensions
 
 let createSPT s pdsp p t = 
-    let ds = XDataStore(DataStore() :> IDataStore, None) :> IXDataStore
+    let dse = XDataStoreEvents()
+    let ds = XDataStore(DataStore() :> IDataStore, dse :> IXDataStoreCallback |> Some) :> IXDataStore
     let tb = FakeTextBuffer(t, p) :> ITextBuffer
-    let spt = new SequencePointTagger(tb, ds) :> ITagger<_>
+    let spt = new SequencePointTagger(tb, ds, dse) :> ITagger<_>
     let spy = CallSpy1<SnapshotSpanEventArgs>(Throws(Exception()))
     spt.TagsChanged.Add(spy.Func >> ignore)
     RunStartParams.Create (EngineConfig()) DateTime.Now (FilePath s) |> ds.UpdateRunStartParams
@@ -50,6 +51,11 @@ let getNSSC n (tb : ITextBuffer) =
         |> Seq.take 1
         |> Seq.map (fun l -> l.Extent)
     NormalizedSnapshotSpanCollection(ss)
+
+[<Fact>]
+let ``Datastore SequencePointsUpdated event fires TagsChanged event``() = 
+    let _, tb, _, s = createSPT @"c:\a.sln" (PerDocumentSequencePoints()) "" ""
+    Assert.True(s.CalledWith |> Option.exists (fun ssea -> ssea.Span.Snapshot.Equals(tb.CurrentSnapshot)))
 
 [<Fact>]
 let ``If buffer doesnt have FileName return empty``() = 

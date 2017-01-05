@@ -5,11 +5,41 @@ open Microsoft.VisualStudio.Text.Tagging
 open R4nd0mApps.TddStud10.Common.Domain
 open R4nd0mApps.TddStud10.Engine.Core
 open R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.EditorFrameworkExtensions
+open System.Threading
 
-type SequencePointTagger(buffer : ITextBuffer, dataStore : IXDataStore) = 
+type SequencePointTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : XDataStoreEvents) as self = 
     inherit DisposableTagger()
 
+    let disposed : bool ref = ref false
+    let syncContext = SynchronizationContext.Current
     let tagsChanged = Event<_, _>()
+    let spCache : seq<SequencePoint> ref = ref null
+    
+    let clearCache() =
+        spCache := null
+
+    let fireTagsChanged _ = 
+        logger.logInfof "Firing SequencePointTagger.TagsChanged"
+        clearCache()
+        syncContext.Send
+            (SendOrPostCallback
+                 (fun _ -> 
+                 Common.safeExec 
+                     (fun () -> 
+                     tagsChanged.Trigger
+                         (self, 
+                          SnapshotSpanEventArgs(SnapshotSpan(buffer.CurrentSnapshot, 0, buffer.CurrentSnapshot.Length))))), 
+             null)
+    
+    let spsUpdatedSub = dse.SequencePointsUpdated.Subscribe fireTagsChanged
+
+    override __.Dispose(disposing) = 
+        if not disposed.Value then 
+            if disposing then 
+                spsUpdatedSub.Dispose()
+            disposed := true
+            base.Dispose(disposing)
+
     interface ITagger<SequencePointTag> with
         
         (* NOTE: We are assuming that 
@@ -22,11 +52,13 @@ type SequencePointTagger(buffer : ITextBuffer, dataStore : IXDataStore) =
                                let sl, _, el, _ = ss.Bounds1Based
                                sp.startLine <= DocumentCoordinate sl && sp.endLine >= DocumentCoordinate el)
                 
-                let sps = p |> dataStore.GetSequencePointsForFile
+                if !spCache = null then
+                    spCache := p |> dataStore.GetSequencePointsForFile
+
                 spans
                 |> Seq.collect (fun ss -> 
                        ss
-                       |> findSPForSpan sps
+                       |> findSPForSpan !spCache
                        |> Seq.map (fun sp -> ss, sp))
                 |> Seq.map 
                        (fun (ss, sp) -> 

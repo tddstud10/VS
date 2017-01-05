@@ -1,5 +1,6 @@
 ﻿using GalaSoft.MvvmLight;
 using R4nd0mApps.TddStud10.Common.Domain;
+using R4nd0mApps.TddStud10.Engine.Core;
 using R4nd0mApps.TddStud10.Hosts.Common.StatusBar;
 using R4nd0mApps.TddStud10.Logger;
 using System;

@@ -6,6 +6,7 @@ open R4nd0mApps.TddStud10.Common.Domain
 open R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.EditorFrameworkExtensions
 open System.Threading
 open R4nd0mApps.TddStud10.Engine.Core
+open System.Collections.Generic
 
 type TestStartTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : XDataStoreEvents) as self = 
     inherit DisposableTagger()
@@ -13,9 +14,14 @@ type TestStartTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : XDataS
     let disposed : bool ref = ref false
     let syncContext = SynchronizationContext.Current
     let tagsChanged = Event<_, _>()
+    let tcCache : IDictionary<DocumentLocation, DTestCase[]> ref = ref null
+    
+    let clearCache() =
+        tcCache := null
     
     let fireTagsChanged _ = 
         logger.logInfof "Firing TestStartTagger.TagsChanged"
+        clearCache()
         syncContext.Send
             (SendOrPostCallback
                  (fun _ -> 
@@ -39,12 +45,15 @@ type TestStartTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : XDataS
         
         member __.GetTags(spans : _) : _ = 
             let getTags _ path = 
+                if !tcCache = null then
+                    tcCache := path |> dataStore.FindTestsInFile
+
                 spans
                 |> Seq.map (fun s -> 
-                       s, 
-                       { document = path
-                         line = DocumentCoordinate(s.Start.GetContainingLine().LineNumber + 1) })
-                |> Seq.map (fun (s, dl) -> s, dataStore.FindTest dl)
+                       let dl = 
+                            { document = path
+                              line = DocumentCoordinate(s.Start.GetContainingLine().LineNumber + 1) }
+                       s, (dl, !tcCache) ||> Dict.tryGetValue [||] id)
                 |> Seq.filter (fun (_, ts) -> 
                        ts
                        |> Seq.isEmpty

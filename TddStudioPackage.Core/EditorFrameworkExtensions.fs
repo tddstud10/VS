@@ -54,18 +54,39 @@ module ITextBufferExtensions =
             p
 
 [<AutoOpen>]
-module ITagAggregatorExtensions = 
+module TagAggregator =
     open Microsoft.VisualStudio.Text
     open Microsoft.VisualStudio.Text.Tagging
+    open System
     
     type SnapshotSnapsToTagSpan<'T when 'T :> ITag> = NormalizedSnapshotSpanCollection -> seq<TagSpan<'T>>
-    
+
     type ITagAggregator<'T when 'T :> ITag> with
-        member self.getTagSpans : SnapshotSnapsToTagSpan<'T> = 
-            fun snapshotSpans -> 
-                snapshotSpans
-                |> Seq.collect (fun (s : SnapshotSpan) -> 
+        member self.GetTagSpans : SnapshotSnapsToTagSpan<'T> = 
+                Seq.collect (fun (s : SnapshotSpan) -> 
                        s
                        |> self.GetTags
                        |> Seq.map (fun mts -> s, mts))
-                |> Seq.collect (fun (s, mts) -> mts.Span.GetSpans(s.Snapshot) |> Seq.map (fun s -> TagSpan(s, mts.Tag)))
+                >> Seq.collect (fun (s, mts) -> mts.Span.GetSpans(s.Snapshot) |> Seq.map (fun s -> TagSpan(s, mts.Tag)))
+
+    type TagAggregator<'T> when 'T :> ITag =
+        | SnapshotSnapsToTagSpan of SnapshotSnapsToTagSpan<'T>
+        | ITagAggregator of ITagAggregator<'T>
+
+    let dispose =
+        function
+        | SnapshotSnapsToTagSpan _ -> ()
+        | ITagAggregator i -> i.Dispose()
+
+    let snapshotSnapsToTagSpan =
+        function
+        | SnapshotSnapsToTagSpan s -> s
+        | ITagAggregator i -> i.GetTagSpans
+    
+    let subscribeToTagsChanged h = 
+        function
+        | SnapshotSnapsToTagSpan _ -> 
+           { new IDisposable 
+             with member __.Dispose() = () }
+        | ITagAggregator i -> i.TagsChanged |> Observable.subscribe h
+        

@@ -74,8 +74,8 @@
     <Compile Include="Editor\Domain.fs" />
     <Compile Include="Editor\HostIdeApi.fs" />
     <Compile Include="Editor\DisposableTagger.fs" />
-    <Compile Include="Editor\TestStartTagger.fs" />
     <Compile Include="Editor\SequencePointTagger.fs" />
+    <Compile Include="Editor\TestStartTagger.fs" />
     <Compile Include="Editor\CodeCoverageTagger.fs" />
     <Compile Include="Editor\FailurePointTagger.fs" />
     <Compile Include="Editor\MarginConstants.fs" />

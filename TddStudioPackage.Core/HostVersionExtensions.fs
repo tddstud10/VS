@@ -1,6 +1,6 @@
 ﻿module R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.HostVersionExtensions
 
-open R4nd0mApps.TddStud10.Common.Domain
+open R4nd0mApps.TddStud10.Engine.Core
 
 let fromDteVersion = function
     | "12.0" -> VS2013

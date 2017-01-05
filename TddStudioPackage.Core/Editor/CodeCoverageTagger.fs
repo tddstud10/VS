@@ -6,34 +6,23 @@ open R4nd0mApps.TddStud10.Common.Domain
 open R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.EditorFrameworkExtensions
 open System.Threading
 open R4nd0mApps.TddStud10.Engine.Core
-
-[<AutoOpen>]
-module TagAggregator =
-    type TagAggregator<'T> when 'T :> ITag =
-        | SnapshotSnapsToTagSpan of SnapshotSnapsToTagSpan<'T>
-        | ITagAggregator of ITagAggregator<'T>
-
-    let dispose =
-        function
-        | SnapshotSnapsToTagSpan _ -> ()
-        | ITagAggregator i -> i.Dispose()
-
-    let snapshotSnapsToTagSpan =
-        function
-        | SnapshotSnapsToTagSpan s -> s
-        | ITagAggregator i -> i.getTagSpans
+open System.Collections.Generic
 
 type CodeCoverageTagger(buffer : ITextBuffer, ta : TagAggregator<_>, dataStore : IXDataStore, dse : XDataStoreEvents) as self = 
     inherit DisposableTagger()
     
     let logger = R4nd0mApps.TddStud10.Logger.LoggerFactory.logger
     let disposed : bool ref = ref false
-
     let syncContext = SynchronizationContext.Current
     let tagsChanged = Event<_, _>()
+    let spTrCache : IDictionary<SequencePointId, DTestResult[]> ref = ref (dict[])
+    
+    let clearCache() =
+        spTrCache := dict[]
     
     let fireTagsChanged _ = 
         logger.logInfof "Firing CodeCoverageTagger.TagsChanged"
+        clearCache()
         syncContext.Send
             (SendOrPostCallback
                  (fun _ -> 
@@ -43,8 +32,8 @@ type CodeCoverageTagger(buffer : ITextBuffer, ta : TagAggregator<_>, dataStore :
                          (self, 
                           SnapshotSpanEventArgs(SnapshotSpan(buffer.CurrentSnapshot, 0, buffer.CurrentSnapshot.Length))))), 
              null)
-    
-    let spUpdatedSub = dse.SequencePointsUpdated.Subscribe fireTagsChanged
+
+    let spTagsChangedSub = TagAggregator.subscribeToTagsChanged fireTagsChanged ta 
     let ciUpdatedSub = dse.CoverageInfoUpdated.Subscribe fireTagsChanged
     
     override __.Dispose(disposing) = 
@@ -52,7 +41,7 @@ type CodeCoverageTagger(buffer : ITextBuffer, ta : TagAggregator<_>, dataStore :
             if disposing then 
                 TagAggregator.dispose ta
                 ciUpdatedSub.Dispose()
-                spUpdatedSub.Dispose()
+                spTagsChangedSub.Dispose()
             disposed := true
             base.Dispose(disposing)
         
@@ -63,19 +52,32 @@ type CodeCoverageTagger(buffer : ITextBuffer, ta : TagAggregator<_>, dataStore :
            (2) Returned TagSpan.Span is the full span, i.e. it is not the set of intersection ranges of Span with failure sequence point. *)
         member __.GetTags(spans : _) : _ = 
             let getTags _ _ = 
-                spans
-                |> TagAggregator.snapshotSnapsToTagSpan ta
-                |> Seq.map (fun tsp -> tsp, tsp.Tag.SptSequencePoint.id |> dataStore.GetRunIdsForTestsCoveringSequencePointId)
-                |> Seq.map (fun (tsp, rids) -> 
-                       tsp, 
-                       rids
-                       |> Seq.map (fun rid -> rid.testId)
-                       |> Seq.distinct
-                       |> Seq.map dataStore.GetResultsForTestId
-                       |> Seq.collect id)
-                |> Seq.map (fun (tsp, trs) -> 
+                let tspans =
+                    spans
+                    |> TagAggregator.snapshotSnapsToTagSpan ta
+                    |> Seq.toList
+
+                let cacheMiss = 
+                    tspans 
+                    |> List.filter (fun t -> t.Tag.SptSequencePoint.id |> spTrCache.Value.ContainsKey |> not)
+            
+                if cacheMiss |> Seq.isEmpty |> not then
+                    let fromDataStore = 
+                        cacheMiss
+                        |> Seq.map (fun tsp -> tsp.Tag.SptSequencePoint.id)
+                        |> dataStore.GetTestResultsForSequencepointsIds
+
+                    spTrCache := 
+                        spTrCache.Value 
+                        |> Seq.append fromDataStore
+                        |> Seq.map (fun kv -> kv.Key, kv.Value)
+                        |> dict
+
+                tspans
+                |> Seq.map (fun tsp -> 
+                       let trs = (tsp.Tag.SptSequencePoint.id, !spTrCache) ||> Dict.tryGetValue [||] id
                        TagSpan<_>(tsp.Span, 
-                                  { CodeCoverageTag.CctSeqPoint = tsp.Tag.SptSequencePoint
+                                  { CctSeqPoint = tsp.Tag.SptSequencePoint
                                     CctTestResults = trs }) :> ITagSpan<_>)
             buffer.FilePath |> Option.fold getTags Seq.empty
         

@@ -2,6 +2,7 @@
 
 open R4nd0mApps.TddStud10.Common.Domain
 open System.ServiceModel
+open System.Collections.Generic
 
 type IXDataStoreCallback = 
     
@@ -59,6 +60,9 @@ type IXDataStore =
     
     [<OperationContract>]
     abstract FindTest : dl:DocumentLocation -> seq<DTestCase>
+
+    [<OperationContract>]
+    abstract FindTestsInFile : fp:FilePath -> IDictionary<DocumentLocation, DTestCase[]>
     
     [<OperationContract>]
     abstract GetSequencePointsForFile : fp:FilePath -> seq<SequencePoint>
@@ -67,10 +71,16 @@ type IXDataStore =
     abstract FindTestFailureInfo : dl:DocumentLocation -> seq<TestFailureInfo>
     
     [<OperationContract>]
+    abstract FindTestFailureInfosInFile : fp:FilePath -> IDictionary<DocumentLocation, TestFailureInfo[]>
+    
+    [<OperationContract>]
     abstract GetRunIdsForTestsCoveringSequencePointId : spid:SequencePointId -> seq<TestRunId>
     
     [<OperationContract>]
     abstract GetResultsForTestId : tid:TestId -> seq<DTestResult>
+
+    [<OperationContract>]
+    abstract GetTestResultsForSequencepointsIds : spids: seq<SequencePointId> -> IDictionary<SequencePointId, DTestResult[]>
 
 [<ServiceBehavior(InstanceContextMode = InstanceContextMode.Single, ConcurrencyMode = ConcurrencyMode.Multiple)>]
 type XDataStore(dataStore : IDataStore, cb : IXDataStoreCallback option) = 
@@ -88,7 +98,7 @@ type XDataStore(dataStore : IDataStore, cb : IXDataStoreCallback option) =
     do dataStore.CoverageInfoUpdated.Add(invokeCbs (fun cb -> cb.OnCoverageInfoUpdated()))
     new() = new XDataStore(DataStore.Instance, None)
     interface IXDataStore with
-        
+
         member __.Connect() : unit = 
             let cb = OperationContext.Current.GetCallbackChannel<IXDataStoreCallback>()
             if (!cbs
@@ -101,7 +111,9 @@ type XDataStore(dataStore : IDataStore, cb : IXDataStoreCallback option) =
             cbs := !cbs |> List.filter ((<>) cb)
         
         member __.FindTest(dl : DocumentLocation) : seq<DTestCase> = logFn "FindTest" (fun () -> dataStore.FindTest dl)
+        member __.FindTestsInFile(fp) = logFn "FindTestsInFile" (fun () -> dataStore.FindTestsInFile fp)
         member __.FindTestFailureInfo(dl : DocumentLocation) : seq<TestFailureInfo> = logFn "FindTestFailureInfo" (fun () -> dataStore.FindTestFailureInfo dl)
+        member __.FindTestFailureInfosInFile(fp) = logFn "FindTestFailureInfosInFile" (fun () -> dataStore.FindTestFailureInfosInFile fp)
         member __.GetResultsForTestId(tid : TestId) : seq<DTestResult> = logFn "GetResultsForTestId" (fun () -> dataStore.GetResultsForTestId tid)
         member __.GetRunIdsForTestsCoveringSequencePointId(spid : SequencePointId) : seq<TestRunId> = 
             logFn "GetRunIdsForTestsCoveringSequencePointId" (fun () -> dataStore.GetRunIdsForTestsCoveringSequencePointId spid)
@@ -110,3 +122,4 @@ type XDataStore(dataStore : IDataStore, cb : IXDataStoreCallback option) =
         member __.ResetData() : unit = logFn "ResetData" (fun () -> dataStore.ResetData())
         member __.UpdateData(rd : RunData) : unit = logFn "UpdateData" (fun () -> dataStore.UpdateData rd)
         member __.UpdateRunStartParams(rsp : RunStartParams) : unit = logFn "UpdateRunStartParams" (fun () -> dataStore.UpdateRunStartParams rsp)
+        member __.GetTestResultsForSequencepointsIds(spids) = logFn "GetTestResultsForSequencepointsIds" (fun () -> dataStore.GetTestResultsForSequencepointsIds spids)

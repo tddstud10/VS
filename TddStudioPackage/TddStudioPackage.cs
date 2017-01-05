@@ -22,6 +22,7 @@ using R4nd0mApps.TddStud10.TestRuntime;
 using Process = EnvDTE.Process;
 using Task = System.Threading.Tasks.Task;
 using Thread = System.Threading.Thread;
+using System.ServiceModel.Description;
 
 namespace R4nd0mApps.TddStud10.Hosts.VS
 {
@@ -288,12 +289,23 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
                         typeof(IXDataStore),
                         new NetNamedPipeBinding(NetNamedPipeSecurityMode.None),
                         address);
+
+                    ServiceDebugBehavior debug = DataStoreServer.Description.Behaviors.Find<ServiceDebugBehavior>();
+                    if (debug == null)
+                    {
+                        DataStoreServer.Description.Behaviors.Add(new ServiceDebugBehavior() { IncludeExceptionDetailInFaults = true });
+                    }
+                    else
+                    {
+                        debug.IncludeExceptionDetailInFaults = true;
+                    }
+
                     DataStoreServer.Open();
                     ConnectToDataStore();
                 }
                 catch (Exception e)
                 {
-                    Logger.LogInfo("Failed to start DS Sever: {0} ...", e);
+                    Logger.LogError("Failed to start DS Sever: {0} ...", e);
                 }
             });
 #endif
@@ -314,7 +326,7 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
             }
             catch (Exception e)
             {
-                Logger.LogInfo("Failed to close connection to DS Sever: {0} ...", e);
+                Logger.LogError("Failed to close connection to DS Sever: {0} ...", e);
             }
 #endif
         }
@@ -338,7 +350,7 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
             }
             catch (Exception e)
             {
-                Logger.LogInfo("Failed to connect to DS Sever: {0} ...", e);
+                Logger.LogError("Failed to connect to DS Sever: {0} ...", e);
             }
         }
 
@@ -355,7 +367,7 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
             }
             catch (Exception e)
             {
-                Logger.LogInfo("Failed to close connection to DS Sever: {0} ...", e);
+                Logger.LogError("Failed to close connection to DS Sever: {0} ...", e);
             }
         }
 

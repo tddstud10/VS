@@ -1,4 +1,5 @@
 ﻿using R4nd0mApps.TddStud10.Common.Domain;
+using R4nd0mApps.TddStud10.Engine.Core;
 using System;
 using System.Globalization;
 using System.Windows.Data;

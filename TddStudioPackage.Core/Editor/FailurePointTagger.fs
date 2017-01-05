@@ -6,6 +6,7 @@ open R4nd0mApps.TddStud10.Common.Domain
 open R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.EditorFrameworkExtensions
 open System.Threading
 open R4nd0mApps.TddStud10.Engine.Core
+open System.Collections.Generic
 
 type FailurePointTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : XDataStoreEvents) as self = 
     inherit DisposableTagger()
@@ -15,9 +16,14 @@ type FailurePointTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : XDa
 
     let syncContext = SynchronizationContext.Current
     let tagsChanged = Event<_, _>()
+    let tfiCache : IDictionary<DocumentLocation, TestFailureInfo[]> ref = ref null
+    
+    let clearCache() =
+        tfiCache := null
     
     let fireTagsChanged _ = 
         logger.logInfof "Firing FailurePointTagger.TagsChanged"
+        clearCache()
         syncContext.Send
             (SendOrPostCallback
                  (fun _ -> 
@@ -44,12 +50,15 @@ type FailurePointTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : XDa
            (2) Returned TagSpan.Span is the full span, i.e. it is not the set of intersection ranges of Span with failure sequence point. *)
         member __.GetTags(spans : _) : _ = 
             let getTags _ path = 
+                if !tfiCache = null then
+                    tfiCache := path |> dataStore.FindTestFailureInfosInFile
+
                 spans
                 |> Seq.map (fun s -> 
-                       s, 
-                       { document = path
-                         line = (s.Start.GetContainingLine().LineNumber + 1) |> DocumentCoordinate })
-                |> Seq.map (fun (s, dl) -> s, dl |> dataStore.FindTestFailureInfo)
+                       let dl = 
+                            { document = path
+                              line = (s.Start.GetContainingLine().LineNumber + 1) |> DocumentCoordinate }
+                       s, (dl, !tfiCache) ||> Dict.tryGetValue [||] id)
                 |> Seq.where (fun (_, tfis) -> 
                        tfis
                        |> Seq.isEmpty

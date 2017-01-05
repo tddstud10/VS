@@ -108,14 +108,6 @@ let updateCoverageInfo (spCovData : list<SequencePointId * list<SimpleTestCase *
     |> ds.UpdateData
 
 [<Fact>]
-let ``Datastore SequencePointsUpdated event fires TagsChanged event``() = 
-    let ds, tb, _, s = createCCT "a.sln" stubSpidXTb (fun _ -> Seq.empty)
-    PerDocumentSequencePoints()
-    |> SequencePoints
-    |> ds.UpdateData
-    Assert.True(s.CalledWith |> Option.exists (fun ssea -> ssea.Span.Snapshot.Equals(tb.CurrentSnapshot)))
-
-[<Fact>]
 let ``Datastore TestResultsUpdated and CoverageInfoUpdated event fires TagsChanged event``() = 
     let ds, tb, _, s = createCCT "a.sln" stubSpidXTb (fun _ -> Seq.empty)
     (PerTestIdDResults(), PerDocumentLocationTestFailureInfo(), PerSequencePointIdTestRunId())

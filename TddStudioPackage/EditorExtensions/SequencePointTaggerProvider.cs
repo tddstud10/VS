@@ -15,7 +15,8 @@ namespace R4nd0mApps.TddStud10.Hosts.VS.EditorExtensions
         {
             return new SequencePointTagger(
                 buffer,
-                TddStud10Package.DataStore) as ITagger<T>;
+                TddStud10Package.DataStore,
+                TddStud10Package.DataStoreEvents) as ITagger<T>;
         }
     }
 }

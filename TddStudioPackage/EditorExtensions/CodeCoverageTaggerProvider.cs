@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 using R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.Core.Editor;
+using R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.EditorFrameworkExtensions;
 using System.ComponentModel.Composition;
 
 namespace R4nd0mApps.TddStud10.Hosts.VS.EditorExtensions
