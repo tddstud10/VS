@@ -254,7 +254,7 @@ namespace R4nd0mApps.TddStud10.Hosts.Console.TddStud10App.ViewModel
             SolutionPath = slnPath;
             var cfg = EngineConfigLoader.load(new EngineConfig(), FilePath.NewFilePath(slnPath));
             EngineLoader.Load(
-                this,
+                null,
                 new EngineParams(
                     HostVersion,
                     cfg,
@@ -395,7 +395,7 @@ namespace R4nd0mApps.TddStud10.Hosts.Console.TddStud10App.ViewModel
                 });
         }
 
-        public void OnRunError(Exception e)
+        public void OnRunError(RunFailureInfo e)
         {
             DispatcherHelper.CheckBeginInvokeOnUI(
                 () =>

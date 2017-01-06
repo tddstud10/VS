@@ -11,6 +11,7 @@
   - cache in %temp%
   - disable tddstudio
   - verify telemetry appears
+- Sanity test with all tddstudio slns
 
 # Acceptance Tests
   - Help About - icon, version, name

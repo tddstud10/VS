@@ -21,8 +21,8 @@ namespace R4nd0mApps.TddStud10.Hosts.VS.EditorExtensions
                 buffer,
                 TagAggregator.TagAggregator<SequencePointTag>.NewITagAggregator(
                     _aggregatorFactory.CreateTagAggregator<SequencePointTag>(buffer)),
-                TddStud10Package.DataStore,
-                TddStud10Package.DataStoreEvents) as ITagger<T>;
+                TddStud10Package.Instance.DataStore.Server,
+                TddStud10Package.Instance.DataStore.Events) as ITagger<T>;
         }
     }
 }
