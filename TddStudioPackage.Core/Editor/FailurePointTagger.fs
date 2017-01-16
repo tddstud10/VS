@@ -2,13 +2,14 @@
 
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Tagging
+open R4nd0mApps.TddStud10.Common
 open R4nd0mApps.TddStud10.Common.Domain
 open R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.EditorFrameworkExtensions
 open System.Threading
 open R4nd0mApps.TddStud10.Engine.Core
 open System.Collections.Generic
 
-type FailurePointTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : XDataStoreEvents) as self = 
+type FailurePointTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : IXDataStoreEvents) as self = 
     inherit DisposableTagger()
 
     let logger = R4nd0mApps.TddStud10.Logger.LoggerFactory.logger
@@ -27,7 +28,7 @@ type FailurePointTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : XDa
         syncContext.Send
             (SendOrPostCallback
                  (fun _ -> 
-                 Common.safeExec 
+                 Exec.safeExec 
                      (fun () -> 
                      tagsChanged.Trigger
                          (self, 
@@ -51,7 +52,7 @@ type FailurePointTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : XDa
         member __.GetTags(spans : _) : _ = 
             let getTags _ path = 
                 if !tfiCache = null then
-                    tfiCache := path |> dataStore.FindTestFailureInfosInFile
+                    tfiCache := path |> dataStore.GetTestFailureInfosInFile |> Async.RunSynchronously
 
                 spans
                 |> Seq.map (fun s -> 

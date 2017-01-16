@@ -11,7 +11,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{CC4BD4C5-FCBF-4E3C-9F44-1919AEC069CE}"
 	ProjectSection(SolutionItems) = preProject
 		README.md = README.md
-		tddstud10.snk = tddstud10.snk
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonUI", "CommonUI\CommonUI.csproj", "{C578A684-2FFF-4100-8620-C1220D05EA3E}"

@@ -12,16 +12,17 @@ open System.Collections.Concurrent
 open R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.EditorFrameworkExtensions
 
 let createSPT s pdsp p t = 
-    let dse = XDataStoreEvents()
+    let dse = new XDataStoreEventsLocal()
     let ds = XDataStore(DataStore() :> IDataStore, dse :> IXDataStoreCallback |> Some) :> IXDataStore
     let tb = FakeTextBuffer(t, p) :> ITextBuffer
     let spt = new SequencePointTagger(tb, ds, dse) :> ITagger<_>
     let spy = CallSpy1<SnapshotSpanEventArgs>(Throws(Exception()))
     spt.TagsChanged.Add(spy.Func >> ignore)
-    RunStartParams.Create (EngineConfig()) DateTime.Now (FilePath s) |> ds.UpdateRunStartParams
+    RunStartParams.Create (EngineConfig()) DateTime.Now (FilePath s) |> ds.SetRunStartParams |> Async.RunSynchronously
     pdsp
     |> SequencePoints
     |> ds.UpdateData
+    |> Async.RunSynchronously
     ds, tb, spt, spy
 
 let createPDSP p (sps : (int * int * int * int) seq) = 

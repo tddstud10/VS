@@ -26,6 +26,7 @@ namespace R4nd0mApps.TddStud10.Hosts.VS.EditorExtensions
         public IWpfTextViewMargin CreateMargin(IWpfTextViewHost textViewHost, IWpfTextViewMargin containerMargin)
         {
             return Margin.Create(
+                TddStud10Package.Instance.TddStud10Host.GetDataStore().GetRunStartParams(),
                 _sp.GetService<EnvDTE.DTE>(),
                 _sp.GetService<IVsDebugger, IVsDebugger3>(),
                 textViewHost.TextView,

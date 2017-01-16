@@ -2,12 +2,13 @@
 
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Tagging
+open R4nd0mApps.TddStud10.Common
 open R4nd0mApps.TddStud10.Common.Domain
 open R4nd0mApps.TddStud10.Engine.Core
 open R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.EditorFrameworkExtensions
 open System.Threading
 
-type SequencePointTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : XDataStoreEvents) as self = 
+type SequencePointTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : IXDataStoreEvents) as self = 
     inherit DisposableTagger()
 
     let disposed : bool ref = ref false
@@ -24,7 +25,7 @@ type SequencePointTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : XD
         syncContext.Send
             (SendOrPostCallback
                  (fun _ -> 
-                 Common.safeExec 
+                 Exec.safeExec 
                      (fun () -> 
                      tagsChanged.Trigger
                          (self, 
@@ -53,7 +54,7 @@ type SequencePointTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : XD
                                sp.startLine <= DocumentCoordinate sl && sp.endLine >= DocumentCoordinate el)
                 
                 if !spCache = null then
-                    spCache := p |> dataStore.GetSequencePointsForFile
+                    spCache := p |> dataStore.GetSequencePointsForFile |> Async.RunSynchronously
 
                 spans
                 |> Seq.collect (fun ss -> 

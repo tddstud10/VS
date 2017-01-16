@@ -21,10 +21,10 @@ type Margin(textView : IWpfTextView, mgta : ITagAggregator<_>, painter, getMargi
     let tcSub = mgta.TagsChanged.Subscribe(fun _ -> paintGlyphs())
     let zlcSub = textView.ZoomLevelChanged.Subscribe(fun _ -> paintGlyphs())
     
-    static member Create (dte : EnvDTE.DTE) (dbg : IVsDebugger3) (textView : IWpfTextView) (mgta : ITagAggregator<_>) = 
+    static member Create rsp (dte : EnvDTE.DTE) (dbg : IVsDebugger3) (textView : IWpfTextView) (mgta : ITagAggregator<_>) = 
         (* NOTE: Pure wireup code in this constructor. Hence not tested. *)
         let getZL = fun () -> textView.ZoomLevel / 100.0
-        let createHA = createHostActions dte dbg
+        let createHA = createHostActions rsp dte dbg
         let canvas = MarginCanvas(getZL)
         
         let painter = 

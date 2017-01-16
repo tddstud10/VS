@@ -11,9 +11,9 @@ open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Tagging
 
 let createTST s pdltp p t = 
-    let dse = XDataStoreEvents()
+    let dse = new XDataStoreEventsLocal()
     let ds = XDataStore(DataStore() :> IDataStore, dse :> IXDataStoreCallback |> Some) :> IXDataStore
-    RunStartParams.Create (EngineConfig()) DateTime.Now (FilePath s) |> ds.UpdateRunStartParams
+    RunStartParams.Create (EngineConfig()) DateTime.Now (FilePath s) |> ds.SetRunStartParams |> Async.RunSynchronously
     let tb = FakeTextBuffer(t, p) :> ITextBuffer
     let tmt = new TestStartTagger(tb, ds, dse) :> ITagger<_>
     let spy = CallSpy1<SnapshotSpanEventArgs>(Throws(Exception()))
@@ -21,6 +21,7 @@ let createTST s pdltp p t =
     pdltp
     |> TestCases
     |> ds.UpdateData
+    |> Async.RunSynchronously
     ds, tb, tmt, spy
 
 let createPDLTP (ts : (string * FilePath * DocumentCoordinate) seq) = 

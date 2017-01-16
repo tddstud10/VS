@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Microsoft.FSharp.Core;
 
 namespace R4nd0mApps.TddStud10.Hosts.VS
 {
@@ -42,9 +43,7 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
 
         public static TddStud10Package Instance { get; private set; }
 
-        public RemoteHost<XDataStore, IXDataStore, XDataStoreEvents> DataStore { get; private set; }
-
-        public RemoteHost<Engine.Core.Engine, IEngine, EngineEvents> Engine { get; private set; }
+        public ITddStud10Host TddStud10Host { get; private set; }
 
         public HostVersion HostVersion
         {
@@ -88,9 +87,6 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
             IconHost = VsStatusBarIconHost.CreateAndInjectIntoVsStatusBar();
 
             Instance = this;
-
-            DataStore = new RemoteHost<XDataStore, IXDataStore, XDataStoreEvents>("datastore");
-            Engine = new RemoteHost<Engine.Core.Engine, IEngine, EngineEvents>("engine");
 
             TelemetryClient.Initialize(Constants.ProductVersion, _dte.Version, _dte.Edition);
 
@@ -154,8 +150,8 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
             var cfg = EngineConfigLoader.load(new EngineConfig(), FilePath.NewFilePath(GetSolutionPath()));
             if (!cfg.IsDisabled)
             {
-                DataStore.StartServer();
-                Engine.StartServer();
+                TddStud10Host = new TddStud10HostProxy(9999, FSharpOption<bool>.None);
+                TddStud10Host.Start();
 
                 EngineLoader.Load(
                     this,
@@ -185,13 +181,13 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
 
         int IVsSolutionEvents.OnBeforeCloseSolution(object pUnkReserved)
         {
-            IconHost.RunState = RunState.Initial;
-
             EngineLoader.DisableEngine();
             EngineLoader.Unload();
 
-            Engine.StopSever();
-            DataStore.StopSever();
+            TddStud10Host.Dispose();
+            TddStud10Host = null;
+
+            IconHost.RunState = RunState.Initial;
 
             return VSConstants.S_OK;
         }

@@ -56,9 +56,9 @@ let getNSSC (DocumentCoordinate ln) (tb : ITextBuffer) =
 
 let createCCT s tb ta = 
     let ta = SnapshotSnapsToTagSpan ta
-    let dse = XDataStoreEvents()
+    let dse = new XDataStoreEventsLocal()
     let ds = XDataStore(DataStore() :> IDataStore, dse :> IXDataStoreCallback |> Some) :> IXDataStore
-    RunStartParams.Create (EngineConfig()) DateTime.Now (FilePath s) |> ds.UpdateRunStartParams
+    RunStartParams.Create (EngineConfig()) DateTime.Now (FilePath s) |> ds.SetRunStartParams |> Async.RunSynchronously
     let tmt = new CodeCoverageTagger(tb, ta, ds, dse) :> ITagger<_>
     let spy = CallSpy1<SnapshotSpanEventArgs>(Throws(Exception()))
     tmt.TagsChanged.Add(spy.Func >> ignore)
@@ -106,6 +106,7 @@ let updateCoverageInfo (spCovData : list<SequencePointId * list<SimpleTestCase *
     (ptir, PerDocumentLocationTestFailureInfo(), pspiri)
     |> TestRunOutput
     |> ds.UpdateData
+    |> Async.RunSynchronously
 
 [<Fact>]
 let ``Datastore TestResultsUpdated and CoverageInfoUpdated event fires TagsChanged event``() = 
@@ -113,6 +114,7 @@ let ``Datastore TestResultsUpdated and CoverageInfoUpdated event fires TagsChang
     (PerTestIdDResults(), PerDocumentLocationTestFailureInfo(), PerSequencePointIdTestRunId())
     |> TestRunOutput
     |> ds.UpdateData
+    |> Async.RunSynchronously
     Assert.True(s.CalledWith |> Option.exists (fun ssea -> ssea.Span.Snapshot.Equals(tb.CurrentSnapshot)))
 
 [<Fact>]
@@ -131,7 +133,7 @@ let ``If a line does not have any SequencePoints - return empty``() =
 [<Fact>]
 let ``If SequencePoint has no test covering it - return empty``() = 
     let ds, cct, nssc = createCCT2 stubSpidXTb stubSpidXLineNumber [ stubSp1 ]
-    ds |> updateCoverageInfo [ stubSpid2, [] ]
+    updateCoverageInfo [ stubSpid2, [] ] ds
     let ts = cct.GetTags(nssc) |> Seq.toArray
     Assert.Equal((1, 0), (ts.Length, ts.[0].Tag.CctTestResults |> Seq.length))
     Assert.Equal([| |], ts.[0].Tag.CctTestResults |> Seq.map SimpleTestResult.fromTR)
@@ -139,19 +141,21 @@ let ``If SequencePoint has no test covering it - return empty``() =
 [<Fact>]
 let ``If SequencePoint has no tests covering it but DataStore does have TestId and TestResult - return empty``() = 
     let ds, cct, nssc = createCCT2 stubSpidXTb stubSpidXLineNumber [ stubSp1 ]
-    ds |> updateCoverageInfo [ stubSpid2, [ (stubTC1, Some stubTR1) ] ]
+    updateCoverageInfo [ stubSpid2, [ (stubTC1, Some stubTR1) ] ] ds
     let ts = cct.GetTags(nssc) |> Seq.toArray
     Assert.Equal((1, 0), (ts.Length, ts.[0].Tag.CctTestResults |> Seq.length))
     Assert.Equal([| |], ts.[0].Tag.CctTestResults |> Seq.map SimpleTestResult.fromTR)
-    Assert.Equal([| stubTC1.toTID() |], 
-                 stubSpid2
-                 |> ds.GetRunIdsForTestsCoveringSequencePointId
-                 |> Seq.map (fun trid -> trid.testId))
+    let tc = 
+        [ stubSpid2 ] 
+        |> ds.GetTestResultsForSequencepointsIds 
+        |> Async.RunSynchronously
+        |> fun it -> it.[stubSpid2].[0].TestCase |> SimpleTestCase.fromTC
+    Assert.Equal<TestId[]>([| stubTC1.toTID() |], [| tc.toTID() |])
 
 [<Fact>]
 let ``If SequencePoint has 1 TestId covering it but with 1 TestResults - return TestResult``() = 
     let ds, cct, nssc = createCCT2 stubSpidXTb stubSpidXLineNumber [ stubSp1 ]
-    ds |> updateCoverageInfo [ stubSpid1, [ (stubTC1, Some stubTR1) ] ]
+    updateCoverageInfo [ stubSpid1, [ (stubTC1, Some stubTR1) ] ] ds
     let ts = cct.GetTags(nssc) |> Seq.toArray
     Assert.Equal((1, 1), (ts.Length, ts.[0].Tag.CctTestResults |> Seq.length))
     Assert.Equal([| stubTR1 |], ts.[0].Tag.CctTestResults |> Seq.map SimpleTestResult.fromTR)
@@ -160,7 +164,7 @@ let ``If SequencePoint has 1 TestId covering it but with 1 TestResults - return 
 [<Fact>]
 let ``If SequencePoint has 1 TestId covering it but with 0 TestResults - return empty``() = 
     let ds, cct, nssc = createCCT2 stubSpidXTb stubSpidXLineNumber [ stubSp1 ]
-    ds |> updateCoverageInfo [ stubSpid1, [ (stubTC1, None) ] ]
+    updateCoverageInfo [ stubSpid1, [ (stubTC1, None) ] ] ds
     let ts = cct.GetTags(nssc) |> Seq.toArray
     Assert.Equal((1, 0), (ts.Length, ts.[0].Tag.CctTestResults |> Seq.length))
     Assert.Equal([| |], ts.[0].Tag.CctTestResults |> Seq.map SimpleTestResult.fromTR)
@@ -168,9 +172,9 @@ let ``If SequencePoint has 1 TestId covering it but with 0 TestResults - return 
 [<Fact>]
 let ``If SequencePoint has 1 TestId covering it but with 2 TestResults - return all TestResults``() = 
     let ds, cct, nssc = createCCT2 stubSpidXTb stubSpidXLineNumber [ stubSp1 ]
-    ds |> updateCoverageInfo [ stubSpid1, 
-                               [ (stubTC1, Some stubTR1)
-                                 (stubTC1, Some stubTR2) ] ]
+    updateCoverageInfo [ stubSpid1, 
+                         [ (stubTC1, Some stubTR1)
+                           (stubTC1, Some stubTR2) ] ] ds
     let ts = cct.GetTags(nssc) |> Seq.toArray
     Assert.Equal((1, 2), (ts.Length, ts.[0].Tag.CctTestResults |> Seq.length))
     Assert.Equal([| stubTR2; stubTR1 |], ts.[0].Tag.CctTestResults |> Seq.map SimpleTestResult.fromTR)
@@ -180,9 +184,9 @@ let ``If SequencePoint has 1 TestId covering it but with 2 TestResults - return 
 [<Fact>]
 let ``If SequencePoint has 2 TestId covering it but with 1 TestResults each - return all TestResults``() = 
     let ds, cct, nssc = createCCT2 stubSpidXTb stubSpidXLineNumber [ stubSp1 ]
-    ds |> updateCoverageInfo [ stubSpid1, 
-                               [ (stubTC1, Some stubTR1)
-                                 (stubTC2, Some stubTR2) ] ]
+    updateCoverageInfo [ stubSpid1, 
+                         [ (stubTC1, Some stubTR1)
+                           (stubTC2, Some stubTR2) ] ] ds
     let ts = cct.GetTags(nssc) |> Seq.toArray
     Assert.Equal((1, 2), (ts.Length, ts.[0].Tag.CctTestResults |> Seq.length))
     Assert.Equal([| stubTR2; stubTR1 |], ts.[0].Tag.CctTestResults |> Seq.map SimpleTestResult.fromTR)
@@ -192,8 +196,8 @@ let ``If SequencePoint has 2 TestId covering it but with 1 TestResults each - re
 [<Fact>]
 let ``If 2 SequencePoints have 1 TestId each covering it and with 1 TestResults each each with different TestOutcomes - return all of them``() = 
     let ds, cct, nssc = createCCT2 stubSpidXTb stubSpidXLineNumber [ stubSp1; stubSp2 ]
-    ds |> updateCoverageInfo [ (stubSpid1, [ (stubTC1, Some stubTR1) ])
-                               (stubSpid2, [ (stubTC2, Some stubTR2) ]) ]
+    updateCoverageInfo [ (stubSpid1, [ (stubTC1, Some stubTR1) ])
+                         (stubSpid2, [ (stubTC2, Some stubTR2) ]) ] ds
     let ts = cct.GetTags(nssc) |> Seq.toArray
     Assert.Equal(2, ts.Length)
     Assert.Equal([| 1; 1 |], ts |> Seq.map (fun t -> t.Tag.CctTestResults |> Seq.length))

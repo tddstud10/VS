@@ -7,8 +7,9 @@ open R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.EditorFrameworkExtensions
 open System.Threading
 open R4nd0mApps.TddStud10.Engine.Core
 open System.Collections.Generic
+open R4nd0mApps.TddStud10.Common
 
-type CodeCoverageTagger(buffer : ITextBuffer, ta : TagAggregator<_>, dataStore : IXDataStore, dse : XDataStoreEvents) as self = 
+type CodeCoverageTagger(buffer : ITextBuffer, ta : TagAggregator<_>, dataStore : IXDataStore, dse : IXDataStoreEvents) as self = 
     inherit DisposableTagger()
     
     let logger = R4nd0mApps.TddStud10.Logger.LoggerFactory.logger
@@ -26,7 +27,7 @@ type CodeCoverageTagger(buffer : ITextBuffer, ta : TagAggregator<_>, dataStore :
         syncContext.Send
             (SendOrPostCallback
                  (fun _ -> 
-                 Common.safeExec 
+                 Exec.safeExec 
                      (fun () -> 
                      tagsChanged.Trigger
                          (self, 
@@ -69,7 +70,7 @@ type CodeCoverageTagger(buffer : ITextBuffer, ta : TagAggregator<_>, dataStore :
 
                     spTrCache := 
                         spTrCache.Value 
-                        |> Seq.append fromDataStore
+                        |> Seq.append (fromDataStore |> Async.RunSynchronously)
                         |> Seq.map (fun kv -> kv.Key, kv.Value)
                         |> dict
 

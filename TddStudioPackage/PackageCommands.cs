@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Assembly = R4nd0mApps.TddStud10.Common.Assembly;
 using CommandEntry = System.Tuple<string, uint, System.EventHandler, System.EventHandler>;
 
 namespace R4nd0mApps.TddStud10.Hosts.VS
@@ -130,7 +131,7 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
 
         private void ExecuteViewTddStud10Logs(object sender, EventArgs e)
         {
-            var pkgPath = Path.GetDirectoryName(Path.GetFullPath(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath));
+            var pkgPath = Assembly.getAssemblyLocation(System.Reflection.Assembly.GetExecutingAssembly());
             var loggerPath = Path.Combine(pkgPath, string.Format(@"rtlogs\TddStud10.RealTimeEtwListener{0}.exe", DFizer.isDF() ? ".DF" : ""));
             try
             {

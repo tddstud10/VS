@@ -2,13 +2,14 @@
 
 open Microsoft.VisualStudio.Text
 open Microsoft.VisualStudio.Text.Tagging
+open R4nd0mApps.TddStud10.Common
 open R4nd0mApps.TddStud10.Common.Domain
 open R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.EditorFrameworkExtensions
 open System.Threading
 open R4nd0mApps.TddStud10.Engine.Core
 open System.Collections.Generic
 
-type TestStartTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : XDataStoreEvents) as self = 
+type TestStartTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : IXDataStoreEvents) as self = 
     inherit DisposableTagger()
 
     let disposed : bool ref = ref false
@@ -25,7 +26,7 @@ type TestStartTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : XDataS
         syncContext.Send
             (SendOrPostCallback
                  (fun _ -> 
-                 Common.safeExec 
+                 Exec.safeExec 
                      (fun () -> 
                      tagsChanged.Trigger
                          (self, 
@@ -46,7 +47,7 @@ type TestStartTagger(buffer : ITextBuffer, dataStore : IXDataStore, dse : XDataS
         member __.GetTags(spans : _) : _ = 
             let getTags _ path = 
                 if !tcCache = null then
-                    tcCache := path |> dataStore.FindTestsInFile
+                    tcCache := path |> dataStore.GetTestsInFile |> Async.RunSynchronously
 
                 spans
                 |> Seq.map (fun s -> 

@@ -15,8 +15,8 @@ namespace R4nd0mApps.TddStud10.Hosts.VS.EditorExtensions
         {
             return new FailurePointTagger(
                 buffer,
-                TddStud10Package.Instance.DataStore.Server,
-                TddStud10Package.Instance.DataStore.Events) as ITagger<T>;
+                TddStud10Package.Instance.TddStud10Host.GetDataStore(),
+                TddStud10Package.Instance.TddStud10Host.GetDataStoreEvents()) as ITagger<T>;
         }
     }
 }

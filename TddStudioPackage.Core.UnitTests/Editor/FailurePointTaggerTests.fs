@@ -12,16 +12,17 @@ open System.Collections.Concurrent
 open R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.EditorFrameworkExtensions
 
 let createFPT s pdltfi p t = 
-    let dse = XDataStoreEvents()
+    let dse = new XDataStoreEventsLocal()
     let ds = XDataStore(DataStore() :> IDataStore, dse :> IXDataStoreCallback |> Some) :> IXDataStore
     let tb = FakeTextBuffer(t, p) :> ITextBuffer
     let tmt = new FailurePointTagger(tb, ds, dse) :> ITagger<_>
     let spy = CallSpy1<SnapshotSpanEventArgs>(Throws(Exception()))
     tmt.TagsChanged.Add(spy.Func >> ignore)
-    RunStartParams.Create (EngineConfig()) DateTime.Now (FilePath s) |> ds.UpdateRunStartParams
+    RunStartParams.Create (EngineConfig()) DateTime.Now (FilePath s) |> ds.SetRunStartParams |> Async.RunSynchronously
     (PerTestIdDResults(), pdltfi, PerSequencePointIdTestRunId())
     |> TestRunOutput
     |> ds.UpdateData
+    |> Async.RunSynchronously
     ds, tb, tmt, spy
 
 let createPDLTFI() = 

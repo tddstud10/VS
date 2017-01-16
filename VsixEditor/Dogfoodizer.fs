@@ -28,21 +28,23 @@ let private readAssembly buildRoot file =
     r.AddSearchDirectory(buildRoot)
     r.AddSearchDirectory(Path.GetDirectoryName(file))
     let rp = ReaderParameters(AssemblyResolver = r, ReadSymbols = true)
-    file, AssemblyDefinition.ReadAssembly(file, rp)
+    let ad = AssemblyDefinition.ReadAssembly(file, rp)
+    let hasSN = ad.Name.HasPublicKey 
+    file, hasSN, ad
 
-let private renameAssembly (f, asm : AssemblyDefinition) = 
+let private renameAssembly (f, hasSN, asm : AssemblyDefinition) = 
     asm.Name <- new AssemblyNameDefinition(asm.Name.Name + ".DF", asm.Name.Version)
-    f, asm
+    f, hasSN, asm
 
-let private renameAssemblyRefs (f, asm : AssemblyDefinition) = 
+let private renameAssemblyRefs (f, hasSN, asm : AssemblyDefinition) = 
     let tddStud10Refs = 
         asm.MainModule.AssemblyReferences
         |> Seq.filter (fun ar -> Regex.IsMatch(ar.Name, ".*tddstud10.*", RegexOptions.IgnoreCase))
         |> Seq.toArray
     tddStud10Refs |> Seq.iter (fun r -> r.Name <- r.Name + ".DF")
-    f, asm
+    f, hasSN, asm
 
-let private changeEtwProviderName (f, asm : AssemblyDefinition) = 
+let private changeEtwProviderName (f, hasSN, asm : AssemblyDefinition) = 
     let t = asm.MainModule.Types |> Seq.tryFind (fun t -> t.FullName.Contains(".WindowsLogger"))
     match t with
     | Some t -> 
@@ -54,28 +56,32 @@ let private changeEtwProviderName (f, asm : AssemblyDefinition) =
         newA.Properties.Add(CustomAttributeNamedArgument(p.Name, newArg))
         t.CustomAttributes.Add(newA)
     | None -> ()
-    f, asm
+    f, hasSN, asm
 
-let private changeExtensibilityTags (f, asm : AssemblyDefinition) = 
+let private changeExtensibilityTags (f, hasSN, asm : AssemblyDefinition) = 
     asm.MainModule.Types
     |> Seq.filter (fun t -> t.FullName.EndsWith("TaggerProvider"))
     |> Seq.iter (fun t -> 
            let a = t.CustomAttributes |> Seq.find (fun a -> a.AttributeType.FullName.EndsWith(".TagTypeAttribute"))
            let tr = a.ConstructorArguments.[0].Value :?> TypeReference
            tr.Scope.Name <- tr.Scope.Name + ".DF")
-    f, asm
+    f, hasSN, asm
 
-let private changeCommonUIResourceName (f, asm : AssemblyDefinition) = 
+let private changeCommonUIResourceName (f, hasSN, asm : AssemblyDefinition) = 
     if asm.Name.Name = "R4nd0mApps.TddStud10.Hosts.CommonUI.DF" then 
         asm.MainModule.Resources
         |> Seq.find (fun r -> r.Name = "R4nd0mApps.TddStud10.Hosts.CommonUI.g.resources")
         |> fun r -> r.Name <- "R4nd0mApps.TddStud10.Hosts.CommonUI.DF.g.resources"
     else ()
-    f, asm
+    f, hasSN, asm
 
-let private resignAndSaveAssembly buildRoot (file : string, asm : AssemblyDefinition) = 
-    let snKeyPair = new System.Reflection.StrongNameKeyPair(File.ReadAllBytes(Path.Combine(buildRoot, "tddstud10.snk")))
-    let wp = WriterParameters(WriteSymbols = true, StrongNameKeyPair = snKeyPair)
+let private resignAndSaveAssembly buildRoot (file : string, hasSN, asm : AssemblyDefinition) = 
+    let wp = 
+        let snKeyPair = System.Reflection.StrongNameKeyPair(File.ReadAllBytes(Path.Combine(buildRoot, "tddstud10.snk")))
+        if hasSN then
+            WriterParameters(WriteSymbols = true, StrongNameKeyPair = snKeyPair)
+        else
+            WriterParameters(WriteSymbols = true)
     asm.Write(file, wp)
 
 let private renameAssemblyFiles file = 
