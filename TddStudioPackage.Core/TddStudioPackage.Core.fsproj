@@ -58,7 +58,6 @@
     <Compile Include="..\Constants.fs">
       <Link>Constants.fs</Link>
     </Compile>
-    <Compile Include="AssemblyAttributes.fs" />
     <Compile Include="Services.fs" />
     <Content Include="paket.references" />
     <Compile Include="PkgGuids.fs" />
