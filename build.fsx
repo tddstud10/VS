@@ -1,5 +1,5 @@
 // include Fake libs
-#r "./packages/FAKE/tools/FakeLib.dll"
+#r "./packages/Build/FAKE/tools/FakeLib.dll"
 #r "System.Management.Automation"
 
 open Fake
@@ -14,7 +14,7 @@ let vsixName = sprintf "TddStud10.%s.org.vsix" version
 let vsixVersion = EnvironmentHelper.environVarOrDefault "GitVersion_AssemblySemVer" "0.0.0.0"
 
 // Directories
-let packagesDir = __SOURCE_DIRECTORY__ @@ "packages"
+let packagesDir = __SOURCE_DIRECTORY__ @@ "packages" @@ "Build"
 let buildDir  = __SOURCE_DIRECTORY__ @@ @"build"
 let testDir  = __SOURCE_DIRECTORY__ @@ @"build"
 let nugetDir = __SOURCE_DIRECTORY__ @@ @"NuGet"

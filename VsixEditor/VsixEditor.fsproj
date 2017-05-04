@@ -10,7 +10,6 @@
     <RootNamespace>R4nd0mApps.TddStud10.VsixEditor</RootNamespace>
     <AssemblyName>R4nd0mApps.TddStud10.VsixEditor</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <TargetFSharpCoreVersion>4.3.1.0</TargetFSharpCoreVersion>
     <Name>R4nd0mApps.TddStud10.VsixEditor</Name>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
@@ -63,6 +62,10 @@
   </Target>
   -->
   <ItemGroup>
+    <Compile Include="..\paket-files\parthopdas\ccd06b223c0ae88ed9164f34cc1f5f06\YaFunTK.fs">
+      <Paket>True</Paket>
+      <Link>paket-files/YaFunTK.fs</Link>
+    </Compile>
     <Content Include="paket.references" />
     <Compile Include="..\AssemblyInfo.fs">
       <Link>AssemblyInfo.fs</Link>
@@ -79,9 +82,6 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
-    <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -92,7 +92,7 @@
     <Reference Include="Microsoft.VisualStudio.Zip.9.0, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   </ItemGroup>
   <Choose>
-    <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v4.5' Or $(TargetFrameworkVersion) == 'v4.5.1' Or $(TargetFrameworkVersion) == 'v4.5.2' Or $(TargetFrameworkVersion) == 'v4.5.3' Or $(TargetFrameworkVersion) == 'v4.6' Or $(TargetFrameworkVersion) == 'v4.6.1' Or $(TargetFrameworkVersion) == 'v4.6.2' Or $(TargetFrameworkVersion) == 'v4.6.3')">
+    <When Condition="$(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v4.5' Or $(TargetFrameworkVersion) == 'v4.5.1' Or $(TargetFrameworkVersion) == 'v4.5.2' Or $(TargetFrameworkVersion) == 'v4.5.3' Or $(TargetFrameworkVersion) == 'v4.6' Or $(TargetFrameworkVersion) == 'v4.6.1' Or $(TargetFrameworkVersion) == 'v4.6.2' Or $(TargetFrameworkVersion) == 'v4.6.3' Or $(TargetFrameworkVersion) == 'v4.7')">
       <ItemGroup>
         <Reference Include="Mono.Cecil">
           <HintPath>..\packages\Mono.Cecil\lib\net45\Mono.Cecil.dll</HintPath>

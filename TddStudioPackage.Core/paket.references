@@ -1,4 +1,6 @@
 MvvmLightLibs
+File:YaFunTK.fs
+
 group TddStud10
-TddStud10.Common
-TddStud10.Engine
+    TddStud10.Common
+    TddStud10.Engine

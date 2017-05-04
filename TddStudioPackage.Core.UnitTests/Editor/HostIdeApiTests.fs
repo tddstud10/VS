@@ -1,8 +1,10 @@
 ﻿module R4nd0mApps.TddStud10.Hosts.VS.TddStudioPackage.Core.Editor.HostIdeApiTests
 
-open Xunit
+open global.Xunit
+open FsUnit.Xunit
 open System
 open R4nd0mApps.TddStud10.Common.Domain
+
 
 let createMGT n =
     [ for _ in 1 .. n do yield { new IMarginGlyphTag } ]
@@ -56,9 +58,9 @@ let ``Some non-CCTs, a failed CCT and a success CCT, return both CCT results wit
     let trs = createTRs [("TR-DN1", "TC-DN1", TOPassed); ("TR-DN2", "TC-DN2", TOFailed)]
     let cct = createCCT sp trs
     let res = HostIdeApiExtensions.getCoveringTestResults (cct :: (createMGT 2)) ()
-    Assert.Equal(Seq.length res, 2)
-    Assert.Equal(res |> Seq.nth 0, (sp, trs |> Seq.find (fun it -> it.Outcome = TOFailed)))
-    Assert.Equal(res |> Seq.nth 1, (sp, trs |> Seq.find (fun it -> it.Outcome = TOPassed)))
+    Seq.length res |> should equal 2
+    Assert.Equal(res |> Seq.item 0, (sp, trs |> Seq.find (fun it -> it.Outcome = TOFailed)))
+    Assert.Equal(res |> Seq.item 1, (sp, trs |> Seq.find (fun it -> it.Outcome = TOPassed)))
 
 [<Fact>]
 let ``Two CCTs, two TRs each, 3 distinct TRs, return only distinct TRs`` () =
@@ -70,7 +72,7 @@ let ``Two CCTs, two TRs each, 3 distinct TRs, return only distinct TRs`` () =
     let res = HostIdeApiExtensions.getCoveringTestResults (ccts @ (createMGT 2)) ()
     let trs = trs1 @ trs2
     Assert.Equal(Seq.length res, 3)
-    Assert.Equal(res |> Seq.nth 0, (sp2, trs |> Seq.find (fun it -> it.Outcome = TOFailed)))
+    Assert.Equal(res |> Seq.item 0, (sp2, trs |> Seq.find (fun it -> it.Outcome = TOFailed)))
     let trdns = res |> Seq.filter (fun (_, it) -> it.Outcome = TOPassed) |> Seq.map (fun (_, it) -> it.DisplayName) |> Seq.sort
     Assert.Equal<string>(trdns, ["TR-DN1"; "TR-DN2"])
 

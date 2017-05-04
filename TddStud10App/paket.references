@@ -1,10 +1,10 @@
-BuildTools.FxCop
 EditorUtils2010
 FSharp.Core
 Mono.Cecil
 MvvmLightLibs
-StyleCop.MSBuild
+File:YaFunTK.fs
+
 group TddStud10
-TddStud10.Common
-TddStud10.TestHost
-TddStud10.Engine
+    TddStud10.Common
+    TddStud10.TestHost
+    TddStud10.Engine
