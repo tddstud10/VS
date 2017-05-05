@@ -51,7 +51,6 @@ module HostIdeApiExtensions =
         fun arg -> 
             Exec.safeExec (fun () -> 
                 rsp
-                |> Async.RunSynchronously
                 |> (function | Some rsp -> f arg rsp | None -> logger.logErrorf "RunStartParams not yet set"))
     
     let runTest = 

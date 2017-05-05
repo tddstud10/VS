@@ -78,10 +78,7 @@ let private changeCommonUIResourceName (f, hasSN, asm : AssemblyDefinition) =
 let private resignAndSaveAssembly buildRoot (file : string, hasSN, asm : AssemblyDefinition) = 
     let wp = 
         let snKeyPair = System.Reflection.StrongNameKeyPair(File.ReadAllBytes(Path.Combine(buildRoot, "tddstud10.snk")))
-        if hasSN then
-            WriterParameters(WriteSymbols = true, StrongNameKeyPair = snKeyPair)
-        else
-            WriterParameters(WriteSymbols = true)
+        WriterParameters(WriteSymbols = true, StrongNameKeyPair = if hasSN then snKeyPair else null)
     asm.Write(file, wp)
 
 let private renameAssemblyFiles file = 

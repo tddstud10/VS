@@ -1248,11 +1248,11 @@ NUGET
     TddStud10.Common (1.2.3-ci0085)
       FSharp.Core (>= 4.0.0.1)
   remote: https://ci.appveyor.com/nuget/engine-is6vufvqx0ah
-    TddStud10.Engine (6.0.1-ci0130)
+    TddStud10.Engine (6.0.1-ci0132)
       FSharp.Core (>= 4.0.0.1)
       FSharp.Data (>= 2.3.3)
       Mono.Cecil (>= 0.9.6.4)
-      Newtonsoft.Json (>= 9.0.1)
+      Newtonsoft.Json (>= 10.0.2)
       Suave (>= 2.0.4)
       System.Reactive (>= 3.1.1)
       TddStud10.Common (>= 1.2.3-ci0085)

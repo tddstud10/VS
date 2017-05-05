@@ -150,7 +150,9 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
             var cfg = EngineConfigLoader.load(new EngineConfig(), FilePath.NewFilePath(GetSolutionPath()));
             if (!cfg.IsDisabled)
             {
-                TddStud10Host = new TddStud10HostProxy(9999, FSharpOption<bool>.None);
+                var port = Network.freeTcpPort();
+                Logger.LogInfo("Package: Selected {0} as the port for Engine server.", port);
+                TddStud10Host = new TddStud10HostProxy(port, FSharpOption<bool>.None);                
                 TddStud10Host.Start();
 
                 EngineLoader.Load(
