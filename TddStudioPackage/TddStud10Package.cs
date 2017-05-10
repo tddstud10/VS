@@ -147,22 +147,23 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
 
         int IVsSolutionEvents.OnAfterOpenSolution(object pUnkReserved, int fNewSolution)
         {
+            var port = Network.freeTcpPort();
+            Logger.LogInfo("Package: Selected {0} as the port for Engine server.", port);
+            TddStud10Host = new TddStud10HostProxy(port, FSharpOption<bool>.None);
+            TddStud10Host.Start();
+
             var cfg = EngineConfigLoader.load(new EngineConfig(), FilePath.NewFilePath(GetSolutionPath()));
+            EngineLoader.Load(
+                this,
+                new EngineParams(
+                    HostVersion,
+                    cfg,
+                    FilePath.NewFilePath(GetSolutionPath()),
+                    DateTime.UtcNow
+                ));
+
             if (!cfg.IsDisabled)
             {
-                var port = Network.freeTcpPort();
-                Logger.LogInfo("Package: Selected {0} as the port for Engine server.", port);
-                TddStud10Host = new TddStud10HostProxy(port, FSharpOption<bool>.None);                
-                TddStud10Host.Start();
-
-                EngineLoader.Load(
-                    this,
-                    new EngineParams(
-                        HostVersion,
-                        cfg,
-                        FilePath.NewFilePath(GetSolutionPath()),
-                        DateTime.UtcNow
-                    ));
                 EngineLoader.EnableEngine();
             }
             else
@@ -219,14 +220,24 @@ namespace R4nd0mApps.TddStud10.Hosts.VS
 
         #region Events2.BuildEvents
 
+        private bool buildEventEnableEngine = false;
+
         private void OnBuildBegin(vsBuildScope scope, vsBuildAction action)
         {
-            EngineLoader.DisableEngine();
+            if (EngineLoader.IsEngineEnabled())
+            {
+                buildEventEnableEngine = true;
+                EngineLoader.DisableEngine();
+            }
         }
 
         private void OnBuildDone(vsBuildScope scope, vsBuildAction action)
         {
-            EngineLoader.EnableEngine();
+            if (buildEventEnableEngine)
+            {
+                buildEventEnableEngine = false;
+                EngineLoader.EnableEngine();
+            }
         }
 
         #endregion Events2.BuildEvents
